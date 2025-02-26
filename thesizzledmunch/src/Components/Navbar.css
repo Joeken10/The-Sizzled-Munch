@@ -1,0 +1,20 @@
+.container-fluid{
+  background-color: rgb(6, 52, 78);
+  padding-top: 0%;
+}
+.navbar-brand{
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 40px;
+  padding-top: 40px;
+  color: rgb(138, 108, 34);
+  font-style: italic;
+}
+.nav-item{
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 30px;
+  padding: 40px 40px;
+
+}
+.d-flex{
+  padding-right: 40%;
+}
