@@ -27,6 +27,9 @@ function Navbar() {
               <li className="nav-item">
                 <a className="nav-link active" aria-current="page" href="home">More</a>
               </li>
+              <li className="nav-item">
+                <a className="nav-link active" aria-current="page" href="home">search</a>
+              </li>
             </ul>
           </div>
         </div>
