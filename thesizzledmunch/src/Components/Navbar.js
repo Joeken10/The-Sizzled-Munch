@@ -30,9 +30,7 @@ function Navbar() {
               <li className="nav-item">
                 <a className="nav-link active" aria-current="page" href="home">add to Cart</a>
               </li>
-              <li className="nav-item">
-                <a className="nav-link active" aria-current="page" href="home">User</a>
-              </li>
+              
             </ul>
           </div>
         </div>
