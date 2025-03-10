@@ -1,0 +1,19 @@
+.navbar {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  padding: 15px;
+  background: #333;
+}
+
+.nav-link {
+  color: white;
+  text-decoration: none;
+  font-size: 18px;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+.nav-link.active {
+  background-color: #555;
+}
