@@ -4,9 +4,13 @@ import Home from './Components/files/Home'
 function App() {
   return (
     <div>
-        <Home />
+     
+      <Home />  
+      
     </div>
   )
 }
 
 export default App
+
+
