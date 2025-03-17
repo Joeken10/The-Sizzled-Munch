@@ -1,0 +1,26 @@
+.footer {
+  background-color: #282c34;
+  color: #fff;
+  padding: 20px;
+  text-align: center;
+  border-top: 2px solid #61dafb;
+  font-family: 'Arial', sans-serif;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+  position: fixed;
+  width: 100%;
+  bottom: 0;
+  left: 0;
+}
+
+.footer h1 {
+  font-size: 24px;
+  letter-spacing: 1px;
+  margin: 0;
+  opacity: 0.9;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.footer h1:hover {
+  opacity: 1;
+  color: #61dafb;
+}
