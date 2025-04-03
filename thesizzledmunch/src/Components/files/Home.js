@@ -1,10 +1,10 @@
 import React from 'react';
+import MenuItems from '../MenuItems';
 
 function Home() {
   return (
-    <div>
-      <h1>Create home page</h1>
-    </div>
+   
+    <MenuItems />
   );
 }
 
