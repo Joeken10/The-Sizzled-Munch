@@ -1,14 +1,16 @@
 import React from 'react'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
+import MenuItems from './components/MenuItems'
 
 function App() {
   return (
     <div>
       <Navbar />
-      <h1>The Sizzled Munch</h1>
+      <MenuItems />
       <Footer />
     </div>
+    
   )
 }
 export default App
