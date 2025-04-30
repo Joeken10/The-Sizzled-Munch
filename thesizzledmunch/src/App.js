@@ -1,13 +1,13 @@
 import React from 'react'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
-import MenuItems from './components/MenuItems'
+import MenuList from './components/MenuList'
 
 function App() {
   return (
     <div>
       <Navbar />
-      <MenuItems />
+      <MenuList />
       <Footer />
     </div>
     

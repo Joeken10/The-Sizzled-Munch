@@ -2,7 +2,7 @@
   "menuList": [
     {
       "id": "1",
-      "image": "/Images/Classic American Burger with Fried Egg.jpeg",
+      "image": "/images/Classic American Burger with Fried Egg.jpeg",
       "itemName": "Classic Beef Burger",
       "category": "Burgers",
       "price": 700,
@@ -15,7 +15,7 @@
     },
     {
       "id": "2",
-      "image": "/Images/Double Bacon Cheeseburger – High Protein.jpeg",
+      "image": "/images/Double Bacon Cheeseburger – High Protein.jpeg",
       "itemName": "Classic Double Beef Burger",
       "category": "Burgers",
       "price": 800,
@@ -28,7 +28,7 @@
     },
     {
       "id": "3",
-      "image": "/Images/Burger Taste.jpeg",
+      "image": "/images/Burger Taste.jpeg",
       "itemName": "Chicken Burger",
       "category": "Burgers",
       "price": 750,
@@ -41,7 +41,7 @@
     },
     {
       "id": "4",
-      "image": "/Images/Fried Chicken Burger.jpeg",
+      "image": "/images/Fried Chicken Burger.jpeg",
       "itemName": "Double Chicken Burger",
       "category": "Burgers",
       "price": 950,
@@ -54,7 +54,7 @@
     },
     {
       "id": "5",
-      "image": "/Images/Classic American Burger with Fried Egg.jpeg",
+      "image": "/images/Classic American Burger with Fried Egg.jpeg",
       "itemName": "Classic Beef Burger",
       "category": "Burgers",
       "price": 700,
@@ -67,7 +67,7 @@
     },
     {
       "id": "6",
-      "image": "/Images/Double Bacon Cheeseburger – High Protein.jpeg",
+      "image": "/images/Double Bacon Cheeseburger – High Protein.jpeg",
       "itemName": "Classic Double Beef Burger",
       "category": "Burgers",
       "price": 800,
@@ -80,7 +80,7 @@
     },
     {
       "id": "7",
-      "image": "/Images/Burger Taste.jpeg",
+      "image": "/images/Burger Taste.jpeg",
       "itemName": "Chicken Burger",
       "category": "Burgers",
       "price": 750,
@@ -93,7 +93,7 @@
     },
     {
       "id": "8",
-      "image": "/Images/Fried Chicken Burger.jpeg",
+      "image": "/images/Fried Chicken Burger.jpeg",
       "itemName": "Double Chicken Burger",
       "category": "Burgers",
       "price": 950,
@@ -106,7 +106,7 @@
     },
     {
       "id": "9",
-      "image": "/Images/Classic American Burger with Fried Egg.jpeg",
+      "image": "/images/Classic American Burger with Fried Egg.jpeg",
       "itemName": "Classic Beef Burger",
       "category": "Burgers",
       "price": 700,
@@ -119,7 +119,7 @@
     },
     {
       "id": "10",
-      "image": "/Images/Double Bacon Cheeseburger – High Protein.jpeg",
+      "image": "/images/Double Bacon Cheeseburger – High Protein.jpeg",
       "itemName": "Classic Double Beef Burger",
       "category": "Burgers",
       "price": 800,
