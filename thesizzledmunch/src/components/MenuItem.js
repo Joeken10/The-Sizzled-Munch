@@ -1,7 +1,7 @@
 import React from 'react';
 import './MenuItem.css';
 
-function MenuItem({ menuAlbum }) {
+function MenuItem({ menuAlbum, onAddToCart }) {
   return (
     <div className="menuItem-container">
       <div className="card-grid">
@@ -16,9 +16,15 @@ function MenuItem({ menuAlbum }) {
               <h5 className="card-title">{item.itemName}</h5>
               <h6 className="card-price">ksh.{item.price}/=</h6>
               <p className="card-text">{item.extras}</p>
-              <a href="ingridients" className="btn btn-primary">
+              <a href="ingredients" className="btn btn-primary">
                 {item.description}
               </a>
+              <button
+                className="btn btn-success mt-2"
+                onClick={() => onAddToCart(item)}
+              >
+                Add to Cart
+              </button>
             </div>
           </div>
         ))}
