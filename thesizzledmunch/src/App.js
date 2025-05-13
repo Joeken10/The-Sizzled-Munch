@@ -10,7 +10,7 @@ function App() {
     <div>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={HomePages} />
+          <Route path="/" element={<HomePages/>} />
         </Routes>
       </BrowserRouter>
       <Navbar />
