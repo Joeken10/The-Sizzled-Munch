@@ -6,9 +6,10 @@
 }
 
 .footer a {
+  color: #ffffff;
   text-decoration: none;
-  font-weight: 500;
-  transition: color 0.2s;
+  margin: 0 10px;
+  transition: color 0.3s;
 }
 
 .footer a:hover {
