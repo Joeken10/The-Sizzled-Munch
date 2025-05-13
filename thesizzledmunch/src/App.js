@@ -2,17 +2,16 @@ import React from 'react'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import MenuList from './components/MenuList'
-import {BrowserRuter as Router, Routes, BrowserRouter, Route} from "react-router-dom";
+import {BrowserRouter, Route, Routes} from "react-router-dom";
+import HomePages from './pages/HomePages';
 
 function App() {
   return (
     <div>
       <BrowserRouter>
-      <Router>
         <Routes>
-          <Route path="" element="" />
+          <Route path="/" element={HomePages} />
         </Routes>
-        </Router>
       </BrowserRouter>
       <Navbar />
       <MenuList />
