@@ -1,9 +1,10 @@
 import React from 'react'
-import Navbar from './components/Navbar'
-import Footer from './components/Footer'
-import MenuList from './components/MenuList'
+
 import {BrowserRouter, Route, Routes} from "react-router-dom";
 import HomePages from './pages/HomePages';
+import MenuList from './pages/MenuList';
+
+
 
 function App() {
   return (
@@ -11,11 +12,10 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<HomePages/>} />
+          <Route path="/menu" element={<MenuList />} />
         </Routes>
       </BrowserRouter>
-      <Navbar />
-      <MenuList />
-      <Footer />
+      
     </div>
     
   )
