@@ -1,13 +1,19 @@
 import React from 'react'
 
-import MenuList from '../components/MenuList'
 import Navbar from '../components/Navbar'
+import Footer from '../components/Footer'
+import LandingPage from './LandingPage'
+
 
 function HomePages() {
   return (
     <div>
-       <Navbar />
-      <MenuList />
+      <header>
+      <Navbar />
+      </header>
+      <LandingPage />
+      <Footer />
+
      
     </div>
   )
