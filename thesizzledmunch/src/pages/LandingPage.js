@@ -17,7 +17,7 @@ function LandingPage() {
 
       {/* GALLERY SECTION */}
       <section className="gallery-section">
-        <h2 className="gallery-heading">🔥 Our Signature Bites 🔥</h2>
+        <h2 className="gallery-heading"> Our Signature Bites </h2>
         <p className="gallery-subtext">A taste of what’s hot and happening in our kitchen</p>
         <div className="photo-carousel">
           <div className="photo-slide">
