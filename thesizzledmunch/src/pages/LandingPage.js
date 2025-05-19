@@ -8,7 +8,7 @@ function LandingPage() {
       <header className="hero-section">
         <div className="overlay">
           <div className="hero-content">
-            <h1 className="hero-title">🔥 The Sizzled Munch 🔥</h1>
+            <h1 className="hero-title">The Sizzled Munch </h1>
             <p className="hero-tagline">Bold, sizzling flavors that ignite your cravings.</p>
             <a href="/menu" className="cta-button">Explore Menu</a>
           </div>
