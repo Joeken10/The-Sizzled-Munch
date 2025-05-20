@@ -1,0 +1,85 @@
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #3b2e0f;
+  padding: 1rem 2rem;
+  color: #f5f2ea;
+  font-family: 'Playfair Display', serif;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.navbar-logo .logo-text {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #f0e9d2;
+  text-decoration: none;
+}
+
+.navbar-links {
+  display: flex;
+  gap: 2rem;
+  list-style: none;
+}
+
+.nav-link {
+  color: #eadfbccc;
+  text-decoration: none;
+  font-size: 1.1rem;
+}
+
+.nav-link:hover,
+.nav-link.active {
+  color: #fff;
+  border-bottom: 2px solid #d9b382;
+}
+
+.navbar-icons {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.icon-link {
+  position: relative;
+}
+
+.icon-img {
+  width: 28px;
+  height: 28px;
+  filter: invert(90%) sepia(10%) saturate(300%) hue-rotate(10deg) brightness(95%) contrast(90%);
+}
+
+.cart-badge {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  background: #d9534f;
+  color: white;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 50%;
+}
+.navbar-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.navbar-search input {
+  padding: 0.4rem 0.6rem;
+  border-radius: 8px;
+  border: none;
+  font-size: 1rem;
+}
+
+.navbar-search button {
+  background-color: #d9b382;
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  cursor: pointer;
+}

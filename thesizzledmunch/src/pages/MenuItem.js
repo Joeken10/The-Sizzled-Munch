@@ -6,27 +6,38 @@ function MenuItem({ menuAlbum, onAddToCart }) {
     <div className="menuItem-container">
       <div className="card-grid">
         {menuAlbum.map((item) => (
-          <div className="card" key={item.id}>
+          <article className="card" key={item.id} aria-label={item.itemName}>
             <img
               src={item.image}
               className="card-img-top"
-              alt={item.itemName || "Menu item image"}
+              alt={item.itemName || 'Menu item image'}
+              loading="lazy"
             />
             <div className="card-body">
               <h5 className="card-title">{item.itemName}</h5>
-              <h6 className="card-price">ksh.{item.price}/=</h6>
+              <p className="card-price">ksh. {item.price.toFixed(2)}</p>
               <p className="card-text">{item.extras}</p>
-              <a href="ingredients" className="btn btn-primary">
+
+              <a href="#ingredients" className="btn btn-primary" aria-label={`View ingredients of ${item.itemName}`}>
                 {item.description}
               </a>
+
               <button
-                className="btn btn-success mt-2"
+                className="btn btn-success mt-2 d-flex align-items-center gap-2"
                 onClick={() => onAddToCart(item)}
+                aria-label={`Add ${item.itemName} to cart`}
+                type="button"
               >
+                <img
+                  src="/icons/add-to-bag-svgrepo-com.svg"
+                  alt="Add to Cart Icon"
+                  style={{ width: '20px', height: '20px' }}
+                  aria-hidden="true"
+                />
                 Add to Cart
               </button>
             </div>
-          </div>
+          </article>
         ))}
       </div>
     </div>
