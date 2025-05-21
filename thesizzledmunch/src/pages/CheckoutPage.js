@@ -3,7 +3,7 @@ import './CheckoutPage.css';
 import { useNavigate } from 'react-router-dom';
 import { LoadScript, Autocomplete } from '@react-google-maps/api';
 
-const GOOGLE_API_KEY = process.env.REACT_APP_GOOGLE_API_KEY; // from .env
+const GOOGLE_API_KEY = process.env.REACT_APP_GOOGLE_API_KEY; 
 const libraries = ['places'];
 
 const paymentMethods = [
@@ -16,6 +16,7 @@ function CheckoutPage({ cart, setCart }) {
   const navigate = useNavigate();
   const autocompleteRef = useRef(null);
 
+  
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -27,9 +28,11 @@ function CheckoutPage({ cart, setCart }) {
   const [errors, setErrors] = useState({});
   const [orderSnapshot, setOrderSnapshot] = useState(null);
 
+  
   const formatCurrency = (num) =>
     num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+  
   const validate = () => {
     const newErrors = {};
 
@@ -57,12 +60,14 @@ function CheckoutPage({ cart, setCart }) {
     return Object.keys(newErrors).length === 0;
   };
 
+  
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
+  
   const onPlaceChanged = () => {
     if (autocompleteRef.current) {
       const place = autocompleteRef.current.getPlace();
@@ -73,35 +78,39 @@ function CheckoutPage({ cart, setCart }) {
     }
   };
 
+  
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!validate()) return;
 
-    // Snapshot cart and form data before clearing
+    const snapshotItems = cart.map(item => ({
+      id: item.id,
+      name: item.itemName,
+      quantity: item.quantity || 1,
+      price: item.price,
+      subtotal: item.price * (item.quantity || 1),
+    }));
+
+    const totalAmount = snapshotItems.reduce((acc, item) => acc + item.subtotal, 0);
+
     setOrderSnapshot({
-      items: cart.map(item => ({
-        id: item.id,
-        name: item.itemName,
-        quantity: item.quantity || 1,
-        price: item.price,
-        subtotal: item.price * (item.quantity || 1),
-      })),
-      total: cart.reduce((acc, item) => acc + item.price * (item.quantity || 1), 0),
+      items: snapshotItems,
+      total: totalAmount,
       customer: { ...formData },
       date: new Date().toLocaleString(),
     });
 
     setSubmitted(true);
-    setCart([]); // clear cart after snapshot
+    setCart([]); 
   };
+
 
   const downloadReceipt = () => {
     if (!orderSnapshot) return;
 
     const { customer, items, total, date } = orderSnapshot;
 
-    let receiptText = '';
-    receiptText += '*** RECEIPT ***\n';
+    let receiptText = '*** RECEIPT ***\n';
     receiptText += `Date: ${date}\n\n`;
 
     receiptText += 'Customer Details:\n';
@@ -128,11 +137,14 @@ function CheckoutPage({ cart, setCart }) {
     URL.revokeObjectURL(url);
   };
 
+  // If cart is empty and no submission yet, prompt to go to menu
   if (!submitted && cart.length === 0) {
     return (
       <main className="checkout-page">
         <h2>Your cart is empty</h2>
-        <button onClick={() => navigate('/menu')}>Go to Menu</button>
+        <button onClick={() => navigate('/menu')} aria-label="Go to Menu">
+          Go to Menu
+        </button>
       </main>
     );
   }
@@ -143,7 +155,8 @@ function CheckoutPage({ cart, setCart }) {
         <>
           <h2>Checkout</h2>
 
-          <section className="checkout-summary">
+          {/* Order Summary */}
+          <section className="checkout-summary" aria-label="Order Summary">
             <h3>Order Summary</h3>
             <ul>
               {cart.map(item => (
@@ -153,45 +166,53 @@ function CheckoutPage({ cart, setCart }) {
                 </li>
               ))}
             </ul>
-            <p><strong>Total: ksh. {formatCurrency(cart.reduce((acc, item) => acc + item.price * (item.quantity || 1), 0))}</strong></p>
+            <p>
+              <strong>
+                Total: ksh.{' '}
+                {formatCurrency(cart.reduce((acc, item) => acc + item.price * (item.quantity || 1), 0))}
+              </strong>
+            </p>
           </section>
 
+          {/* Checkout Form with Google Autocomplete */}
           <LoadScript googleMapsApiKey={GOOGLE_API_KEY} libraries={libraries}>
-            <form className="checkout-form" onSubmit={handleSubmit} noValidate>
+            <form className="checkout-form" onSubmit={handleSubmit} noValidate aria-label="Checkout form">
               {/* Full Name */}
-              <div>
+              <div className="form-group">
                 <label htmlFor="name">Full Name:</label>
                 <input
                   id="name"
                   name="name"
+                  type="text"
                   value={formData.name}
                   onChange={handleChange}
-                  type="text"
                   required
                   placeholder="John Doe"
                   aria-describedby="name-error"
+                  aria-invalid={!!errors.name}
                 />
-                {errors.name && <span id="name-error" className="error">{errors.name}</span>}
+                {errors.name && <span id="name-error" className="error" role="alert">{errors.name}</span>}
               </div>
 
               {/* Email */}
-              <div>
+              <div className="form-group">
                 <label htmlFor="email">Email:</label>
                 <input
                   id="email"
                   name="email"
+                  type="email"
                   value={formData.email}
                   onChange={handleChange}
-                  type="email"
                   required
                   placeholder="example@mail.com"
                   aria-describedby="email-error"
+                  aria-invalid={!!errors.email}
                 />
-                {errors.email && <span id="email-error" className="error">{errors.email}</span>}
+                {errors.email && <span id="email-error" className="error" role="alert">{errors.email}</span>}
               </div>
 
-              {/* Address */}
-              <div>
+              {/* Address with Autocomplete */}
+              <div className="form-group">
                 <label htmlFor="address">Delivery Address:</label>
                 <Autocomplete
                   onLoad={(autocomplete) => (autocompleteRef.current = autocomplete)}
@@ -200,19 +221,20 @@ function CheckoutPage({ cart, setCart }) {
                   <input
                     id="address"
                     name="address"
+                    type="text"
                     value={formData.address}
                     onChange={handleChange}
-                    type="text"
                     placeholder="Start typing your address"
                     required
                     aria-describedby="address-error"
+                    aria-invalid={!!errors.address}
                   />
                 </Autocomplete>
-                {errors.address && <span id="address-error" className="error">{errors.address}</span>}
+                {errors.address && <span id="address-error" className="error" role="alert">{errors.address}</span>}
               </div>
 
               {/* Payment Method */}
-              <div>
+              <div className="form-group">
                 <label htmlFor="paymentMethod">Payment Method:</label>
                 <select
                   id="paymentMethod"
@@ -221,6 +243,7 @@ function CheckoutPage({ cart, setCart }) {
                   onChange={handleChange}
                   required
                   aria-describedby="payment-error"
+                  aria-invalid={!!errors.paymentMethod}
                 >
                   <option value="">Select a payment method</option>
                   {paymentMethods.map((method) => (
@@ -230,22 +253,29 @@ function CheckoutPage({ cart, setCart }) {
                   ))}
                 </select>
                 {errors.paymentMethod && (
-                  <span id="payment-error" className="error">{errors.paymentMethod}</span>
+                  <span id="payment-error" className="error" role="alert">
+                    {errors.paymentMethod}
+                  </span>
                 )}
               </div>
 
-              <button type="submit">Place Order</button>
+              <button type="submit" className="submit-button">
+                Place Order
+              </button>
             </form>
           </LoadScript>
         </>
       ) : (
-        <section className="order-confirmation">
+        // Order Confirmation
+        <section className="order-confirmation" aria-live="polite">
           <h2>Thank you for your order!</h2>
           <p>Your order has been placed successfully and is being processed.</p>
 
           <section className="receipt-details" style={{ marginTop: '1.5rem' }}>
             <h3>Order Summary</h3>
-            <p><strong>Order Date:</strong> {orderSnapshot.date}</p>
+            <p>
+              <strong>Order Date:</strong> {orderSnapshot.date}
+            </p>
 
             <h4>Customer Details</h4>
             <p>Name: {orderSnapshot.customer.name}</p>
@@ -255,19 +285,22 @@ function CheckoutPage({ cart, setCart }) {
 
             <h4>Items Ordered:</h4>
             <ul>
-              {orderSnapshot.items.map(item => (
+              {orderSnapshot.items.map((item) => (
                 <li key={item.id}>
-                  {item.name} x {item.quantity} @ ksh. {formatCurrency(item.price)} each = ksh. {formatCurrency(item.subtotal)}
+                  {item.name} x {item.quantity} @ ksh. {formatCurrency(item.price)} each = ksh.{' '}
+                  {formatCurrency(item.subtotal)}
                 </li>
               ))}
             </ul>
-            <p><strong>Total: ksh. {formatCurrency(orderSnapshot.total)}</strong></p>
+            <p>
+              <strong>Total: ksh. {formatCurrency(orderSnapshot.total)}</strong>
+            </p>
           </section>
 
-          <button onClick={downloadReceipt} style={{ marginRight: '1rem' }}>
+          <button onClick={downloadReceipt} style={{ marginRight: '1rem' }} aria-label="Download receipt as text file">
             Download Receipt
           </button>
-          <button onClick={() => navigate('/menu')}>
+          <button onClick={() => navigate('/menu')} aria-label="Back to menu">
             Back to Menu
           </button>
         </section>

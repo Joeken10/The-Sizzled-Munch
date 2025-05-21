@@ -1,17 +1,14 @@
-.footer {
-  background-color: #02001f;
-  color: #ffffff;
-  text-align: center;
-  padding: 20px;
+.footer-icon {
+  width: 24px;
+  height: 24px;
 }
 
-.footer a {
-  color: #ffffff;
-  text-decoration: none;
-  margin: 0 10px;
-  transition: color 0.3s;
+.subscribe-form input {
+  max-width: 300px;
+  padding: 8px;
+  border-radius: 4px;
 }
 
-.footer a:hover {
-  color: #ffcc00;
+.subscribe-form button {
+  width: 120px;
 }

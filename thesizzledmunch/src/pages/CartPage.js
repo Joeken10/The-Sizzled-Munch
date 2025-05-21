@@ -1,20 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../App'; 
 import './CartPage.css';
 
 function CartPage({ cart, setCart }) {
+  const { user } = useContext(AuthContext);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [itemToRemove, setItemToRemove] = useState(null);
   const navigate = useNavigate();
+
+  
+  useEffect(() => {
+    if (user?.id) {
+      fetch(`http://localhost:5000/cartItems?userId=${user.id}`)
+        .then((res) => res.json())
+        .then((data) => setCart(data))
+        .catch((err) => console.error('Error fetching cart:', err));
+    }
+  }, [user, setCart]);
 
   const handleRemoveClick = (item) => {
     setItemToRemove(item);
     setConfirmOpen(true);
   };
 
-  const handleRemoveConfirmed = () => {
+  const handleRemoveConfirmed = async () => {
     if (itemToRemove) {
-      setCart((prevCart) => prevCart.filter((item) => item.id !== itemToRemove.id));
+      try {
+        await fetch(`http://localhost:5000/cartItems/${itemToRemove.id}`, {
+          method: 'DELETE',
+        });
+
+        setCart((prevCart) =>
+          prevCart.filter((item) => item.id !== itemToRemove.id)
+        );
+      } catch (error) {
+        console.error('Failed to remove item:', error);
+      }
     }
     setConfirmOpen(false);
     setItemToRemove(null);
@@ -25,24 +47,42 @@ function CartPage({ cart, setCart }) {
     setItemToRemove(null);
   };
 
-  const handleIncrease = (id) => {
-    setCart((prevCart) =>
-      prevCart.map((item) =>
-        item.id === id
-          ? { ...item, quantity: Math.min((item.quantity || 1) + 1, 10) }
-          : item
-      )
-    );
+  const handleIncrease = async (id) => {
+    const item = cart.find((i) => i.id === id);
+    if (!item) return;
+
+    const updated = { ...item, quantity: Math.min((item.quantity || 1) + 1, 10) };
+
+    try {
+      await fetch(`http://localhost:5000/cartItems/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated),
+      });
+
+      setCart((prevCart) => prevCart.map((i) => (i.id === id ? updated : i)));
+    } catch (error) {
+      console.error('Failed to increase quantity:', error);
+    }
   };
 
-  const handleDecrease = (id) => {
-    setCart((prevCart) =>
-      prevCart.map((item) =>
-        item.id === id
-          ? { ...item, quantity: Math.max((item.quantity || 1) - 1, 1) }
-          : item
-      )
-    );
+  const handleDecrease = async (id) => {
+    const item = cart.find((i) => i.id === id);
+    if (!item) return;
+
+    const updated = { ...item, quantity: Math.max((item.quantity || 1) - 1, 1) };
+
+    try {
+      await fetch(`http://localhost:5000/cartItems/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated),
+      });
+
+      setCart((prevCart) => prevCart.map((i) => (i.id === id ? updated : i)));
+    } catch (error) {
+      console.error('Failed to decrease quantity:', error);
+    }
   };
 
   const totalWithTaxes = cart.reduce(
