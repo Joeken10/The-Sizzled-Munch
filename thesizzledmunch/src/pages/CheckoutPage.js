@@ -3,7 +3,7 @@ import './CheckoutPage.css';
 import { useNavigate } from 'react-router-dom';
 import { LoadScript, Autocomplete } from '@react-google-maps/api';
 
-const GOOGLE_API_KEY = process.env.REACT_APP_GOOGLE_API_KEY; 
+const GOOGLE_API_KEY = process.env.REACT_APP_GOOGLE_API_KEY;
 const libraries = ['places'];
 
 const paymentMethods = [
@@ -16,7 +16,7 @@ function CheckoutPage({ cart, setCart }) {
   const navigate = useNavigate();
   const autocompleteRef = useRef(null);
 
-  
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -28,11 +28,11 @@ function CheckoutPage({ cart, setCart }) {
   const [errors, setErrors] = useState({});
   const [orderSnapshot, setOrderSnapshot] = useState(null);
 
-  
+
   const formatCurrency = (num) =>
     num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  
+
   const validate = () => {
     const newErrors = {};
 
@@ -60,14 +60,14 @@ function CheckoutPage({ cart, setCart }) {
     return Object.keys(newErrors).length === 0;
   };
 
-  
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
-  
+
   const onPlaceChanged = () => {
     if (autocompleteRef.current) {
       const place = autocompleteRef.current.getPlace();
@@ -78,7 +78,7 @@ function CheckoutPage({ cart, setCart }) {
     }
   };
 
-  
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!validate()) return;
@@ -101,7 +101,7 @@ function CheckoutPage({ cart, setCart }) {
     });
 
     setSubmitted(true);
-    setCart([]); 
+    setCart([]);
   };
 
 
