@@ -1,0 +1,16 @@
+{
+  "files": {
+    "main.css": "/The-Sizzled-Munch/static/css/main.2c05d882.css",
+    "main.js": "/The-Sizzled-Munch/static/js/main.8f312c3d.js",
+    "static/js/453.fbc46232.chunk.js": "/The-Sizzled-Munch/static/js/453.fbc46232.chunk.js",
+    "static/media/1photo.jpeg": "/The-Sizzled-Munch/static/media/1photo.3f06f5a6911a3741c36d.jpeg",
+    "index.html": "/The-Sizzled-Munch/index.html",
+    "main.2c05d882.css.map": "/The-Sizzled-Munch/static/css/main.2c05d882.css.map",
+    "main.8f312c3d.js.map": "/The-Sizzled-Munch/static/js/main.8f312c3d.js.map",
+    "453.fbc46232.chunk.js.map": "/The-Sizzled-Munch/static/js/453.fbc46232.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.2c05d882.css",
+    "static/js/main.8f312c3d.js"
+  ]
+}
