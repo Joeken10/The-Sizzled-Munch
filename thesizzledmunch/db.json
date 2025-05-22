@@ -143,6 +143,32 @@
         "Whipped Cream",
         "Mint Leaf"
       ]
-    }
+    },
+    {
+  "id": "11",
+  "image": "/images/Vanilla-milkshake.jpeg",
+  "itemName": "Vanilla Milkshake",
+  "category": "Drinks",
+  "price": 300,
+  "description": "Creamy vanilla milkshake blended with whole milk, vanilla ice cream, and topped with whipped cream.",
+  "extras": [
+    "Straw",
+    "Cherry",
+    "Chocolate Drizzle"
+  ]
+},
+{
+  "id": "12",
+  "image": "/images/fanta.jpeg",
+  "itemName": "Fanta Orange",
+  "category": "Drinks",
+  "price": 200,
+  "description": "Chilled 350ml carbonated orange-flavored soda.",
+  "extras": [
+    "Ice",
+    "Lemon Slice",
+    "Straw"
+  ]
+}
   ]
 }
