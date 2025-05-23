@@ -1,3 +1,4 @@
 *Clear Notes*
    thesizzledmunch app.
-   made importation using  *import {BrowRouter, Routes, Route} from "react-router-dom"*
+   made importation using  *import { BrowserRouter, Routes, Route } from "react-router-dom"
+"*
