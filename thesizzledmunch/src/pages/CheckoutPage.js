@@ -137,7 +137,6 @@ function CheckoutPage({ cart, setCart }) {
     URL.revokeObjectURL(url);
   };
 
-  // If cart is empty and no submission yet, prompt to go to menu
   if (!submitted && cart.length === 0) {
     return (
       <main className="checkout-page">
