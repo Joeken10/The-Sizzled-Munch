@@ -9,20 +9,14 @@ import Footer from './components/Footer';
 import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
 
-
 export const AuthContext = createContext();
 
 function App() {
   const [cart, setCart] = useState([]);
-  const [user, setUser] = useState(null);  
-
-  
-  useEffect(() => {
+  const [user, setUser] = useState(() => {
     const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-  }, []);
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
 
   useEffect(() => {
     if (user) {
