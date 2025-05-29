@@ -15,7 +15,9 @@ function MenuList({ cart, setCart }) {
   useEffect(() => {
     setLoading(true);
     setError(null);
-    fetch('http://localhost:5000/menuList')
+    fetch('http://localhost:8000/menu_items', {
+      credentials: 'include', // include session cookie if using login
+    })
       .then((res) => {
         if (!res.ok) throw new Error('Failed to fetch menu');
         return res.json();
@@ -29,7 +31,6 @@ function MenuList({ cart, setCart }) {
     setCart((prevCart) => {
       const existingIndex = prevCart.findIndex((cartItem) => cartItem.id === item.id);
       if (existingIndex >= 0) {
-        // Create new cart array with updated quantity immutably
         return prevCart.map((cartItem, idx) =>
           idx === existingIndex
             ? { ...cartItem, quantity: (cartItem.quantity || 1) + 1 }
@@ -42,7 +43,7 @@ function MenuList({ cart, setCart }) {
   };
 
   const filteredAlbums = albums.filter((item) =>
-    item.itemName.toLowerCase().includes(searchQuery)
+    item.item_name.toLowerCase().includes(searchQuery)
   );
 
   if (loading) return <div className="menuList-container">Loading menu...</div>;

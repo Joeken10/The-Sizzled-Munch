@@ -18,18 +18,28 @@ function SignIn() {
       return;
     }
 
-    const res = await fetch(`http://localhost:5000/users`);
-    const users = await res.json();
+    try {
+      // Send username or email as "username" field per your backend (adjust if needed)
+      const response = await fetch('http://localhost:8000/signin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // important for session cookies
+        body: JSON.stringify({ username: identifier, password }),
+      });
 
-    const user = users.find(u =>
-      (u.username === identifier || u.email === identifier) && u.password === password
-    );
+      const data = await response.json();
 
-    if (user) {
-      setUser(user);
-      navigate('/');
-    } else {
-      alert('Invalid username/email or password');
+      if (response.ok) {
+        setUser(data);
+        navigate('/');
+      } else {
+        alert(data.error || 'Invalid username/email or password');
+      }
+    } catch (error) {
+      alert('An error occurred. Please try again later.');
+      console.error('SignIn error:', error);
     }
   };
 

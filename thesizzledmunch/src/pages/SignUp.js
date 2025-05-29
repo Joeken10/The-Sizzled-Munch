@@ -14,6 +14,7 @@ function SignUp() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState('');
   const [emailError, setEmailError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const validateEmail = (email) => {
@@ -42,15 +43,14 @@ function SignUp() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
 
     if (!username || !email || !password || !confirmPassword) {
       alert('Please fill in all fields.');
       return;
     }
 
-    if (!validateEmail(email)) {
-      return;
-    }
+    if (!validateEmail(email)) return;
 
     if (!checkPasswordStrength(password)) {
       alert('Password is too weak.');
@@ -62,58 +62,82 @@ function SignUp() {
       return;
     }
 
-    const res = await fetch(`http://localhost:5000/users?username=${username}`);
-    const existingUsers = await res.json();
-    if (existingUsers.length > 0) {
-      alert('Username already exists');
-      return;
+    setLoading(true);
+    try {
+      // Check if username or email already exists
+      const checkRes = await fetch(`http://127.0.0.1:8000/users/check?username=${username}&email=${email}`);
+      if (!checkRes.ok) throw new Error('Failed to check existing user');
+      const checkData = await checkRes.json();
+      if (checkData.exists) {
+        alert('Username or email already exists');
+        setLoading(false);
+        return;
+      }
+
+      const newUser = { username, email, password };
+      const response = await fetch('http://127.0.0.1:8000/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newUser),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        alert(errorData.error || 'Sign up failed');
+        setLoading(false);
+        return;
+      }
+
+      const createdUser = await response.json();
+      setUser(createdUser);
+      navigate('/');
+    } catch (err) {
+      alert('An error occurred during sign up');
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
-
-    const newUser = { username, email, password };
-    const response = await fetch('http://localhost:5000/users', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newUser),
-    });
-
-    const createdUser = await response.json();
-    setUser(createdUser);
-    navigate('/');
   };
 
   const handleGoogleSignUp = async () => {
+    if (loading) return;
+    setLoading(true);
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      
-      const res = await fetch('http://localhost:5000/users?email=' + user.email);
+      // Check if user exists by email
+      const res = await fetch(`http://127.0.0.1:8000/users/check?email=${user.email}`);
+      if (!res.ok) throw new Error('Failed to check existing user');
       const existingUsers = await res.json();
 
-      if (existingUsers.length === 0) {
+      if (!existingUsers.exists) {
         const newUser = {
-          username: user.displayName,
+          username: user.displayName || user.email.split('@')[0],
           email: user.email,
           password: '',
         };
-        await fetch('http://localhost:5000/users', {
+        await fetch('http://127.0.0.1:8000/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(newUser),
         });
       }
 
-      setUser(user);
+      setUser({ username: user.displayName, email: user.email, id: user.uid });
       navigate('/');
     } catch (error) {
+      alert("Google sign-in failed");
       console.error("Google sign-in error:", error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="signup-container">
       <h2>Sign Up</h2>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} noValidate>
         <input
           type="text"
           placeholder="Username"
@@ -144,6 +168,7 @@ function SignUp() {
             className="toggle-password"
             onClick={() => setShowPassword(prev => !prev)}
             style={{ cursor: 'pointer' }}
+            aria-label="Toggle password visibility"
           >
             {showPassword ? '🙈' : '👁️'}
           </span>
@@ -170,18 +195,21 @@ function SignUp() {
             className="toggle-password"
             onClick={() => setShowConfirmPassword(prev => !prev)}
             style={{ cursor: 'pointer' }}
+            aria-label="Toggle confirm password visibility"
           >
             {showConfirmPassword ? '🙈' : '👁️'}
           </span>
         </div>
 
-        <button type="submit">Sign Up</button>
+        <button type="submit" disabled={loading}>
+          {loading ? 'Signing Up...' : 'Sign Up'}
+        </button>
       </form>
 
       <div className="or-divider">OR</div>
 
-      <button onClick={handleGoogleSignUp} className="google-button">
-        Sign Up with Google
+      <button onClick={handleGoogleSignUp} className="google-button" disabled={loading}>
+        {loading ? 'Loading...' : 'Sign Up with Google'}
       </button>
 
       <p>Already have an account? <Link to="/signin">Sign In here</Link></p>

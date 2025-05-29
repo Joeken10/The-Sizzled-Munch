@@ -14,7 +14,7 @@ function MenuItem({ menuAlbum, onAddToCart }) {
               loading="lazy"
             />
             <div className="card-body">
-              <h5 className="card-title">{item.itemName}</h5>
+              <h5 className="card-title">{item.item_name}</h5>
               <p className="card-price">ksh. {item.price.toFixed(2)}</p>
               <p className="card-text">{item.extras}</p>
 
