@@ -218,3 +218,6 @@ function SignUp() {
 }
 
 export default SignUp;
+
+
+//picking up from backend//
