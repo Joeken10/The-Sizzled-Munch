@@ -85,7 +85,7 @@ function CheckoutPage({ cart, setCart }) {
 
     const snapshotItems = cart.map(item => ({
       id: item.id,
-      name: item.itemName,
+      name: item.item_name,
       quantity: item.quantity || 1,
       price: item.price,
       subtotal: item.price * (item.quantity || 1),
@@ -160,7 +160,7 @@ function CheckoutPage({ cart, setCart }) {
             <ul>
               {cart.map(item => (
                 <li key={item.id}>
-                  {item.itemName} x {item.quantity || 1} — ksh.{' '}
+                  {item.item_name} x {item.quantity || 1} — ksh.{' '}
                   {formatCurrency(item.price * (item.quantity || 1))}
                 </li>
               ))}
