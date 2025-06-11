@@ -4,7 +4,7 @@ import './MenuList.css';
 import MenuItem from './MenuItem';
 
 function MenuList({ cart, setCart }) {
-  const [albums, setAlbums] = useState([]);
+  const [menuItems, setMenuItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -12,49 +12,60 @@ function MenuList({ cart, setCart }) {
   const queryParams = new URLSearchParams(location.search);
   const searchQuery = queryParams.get('search')?.toLowerCase() || '';
 
+  // Fetch menu items on mount
   useEffect(() => {
     setLoading(true);
     setError(null);
+
     fetch('http://localhost:8000/menu_items', {
-      credentials: 'include', // include session cookie if using login
+      credentials: 'include',
     })
       .then((res) => {
-        if (!res.ok) throw new Error('Failed to fetch menu');
+        if (!res.ok) throw new Error('Failed to fetch menu items');
         return res.json();
       })
-      .then((data) => setAlbums(data))
+      .then((data) => setMenuItems(data))
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
 
+  // Handle adding to cart
   const handleAddToCart = (item) => {
     setCart((prevCart) => {
       const existingIndex = prevCart.findIndex((cartItem) => cartItem.id === item.id);
+
+      let updatedCart;
       if (existingIndex >= 0) {
-        return prevCart.map((cartItem, idx) =>
+        updatedCart = prevCart.map((cartItem, idx) =>
           idx === existingIndex
             ? { ...cartItem, quantity: (cartItem.quantity || 1) + 1 }
             : cartItem
         );
       } else {
-        return [...prevCart, { ...item, quantity: 1 }];
+        updatedCart = [...prevCart, { ...item, quantity: 1 }];
       }
+
+      console.log('Cart updated:', updatedCart); // ✅ Debug log
+      return updatedCart;
     });
   };
 
-  const filteredAlbums = albums.filter((item) =>
+  // Filter by search query
+  const filteredItems = menuItems.filter((item) =>
     item.item_name.toLowerCase().includes(searchQuery)
   );
 
-  if (loading) return <div className="menuList-container">Loading menu...</div>;
-  if (error) return <div className="menuList-container error">Error: {error}</div>;
-
+  // Render
   return (
     <div className="menuList-container">
-      {filteredAlbums.length === 0 ? (
+      {loading ? (
+        <p>Loading menu...</p>
+      ) : error ? (
+        <p className="error">Error: {error}</p>
+      ) : filteredItems.length === 0 ? (
         <p>No menu items found.</p>
       ) : (
-        <MenuItem menuAlbum={filteredAlbums} onAddToCart={handleAddToCart} />
+        <MenuItem menuAlbum={filteredItems} onAddToCart={handleAddToCart} />
       )}
     </div>
   );

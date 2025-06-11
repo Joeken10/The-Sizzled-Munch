@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useContext, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import { AuthContext } from "../App";
-import "./CartPage.css";
+import React, { useState, useEffect, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../App'; 
+import './CartPage.css';
 
 function CartPage({ cart, setCart }) {
   const { user } = useContext(AuthContext);
@@ -9,42 +9,15 @@ function CartPage({ cart, setCart }) {
   const [itemToRemove, setItemToRemove] = useState(null);
   const navigate = useNavigate();
 
-  const getHeaders = () => ({
-    "Content-Type": "application/json",
-  });
-
-  const fetchCart = useCallback(() => {
-    if (!user) {
-      setCart([]);
-      return;
-    }
-
-    fetch(`http://localhost:8000/cart`, {
-      headers: getHeaders(),
-      credentials: "include",
-    })
-      .then((res) => {
-        if (res.status === 401) {
-          throw new Error("Unauthorized. Please login again.");
-        }
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        return res.json();
-      })
-      .then((data) => {
-        setCart(Array.isArray(data) ? data : []);
-      })
-      .catch((err) => {
-        console.error("Error fetching cart:", err);
-        setCart([]);
-        if (err.message.includes("Unauthorized")) {
-          navigate("/login");
-        }
-      });
-  }, [user, setCart, navigate]);
-
+  
   useEffect(() => {
-    fetchCart();
-  }, [fetchCart]);
+    if (user?.id) {
+      fetch(`http://localhost:5000/cartItems?userId=${user.id}`)
+        .then((res) => res.json())
+        .then((data) => setCart(data))
+        .catch((err) => console.error('Error fetching cart:', err));
+    }
+  }, [user, setCart]);
 
   const handleRemoveClick = (item) => {
     setItemToRemove(item);
@@ -52,30 +25,21 @@ function CartPage({ cart, setCart }) {
   };
 
   const handleRemoveConfirmed = async () => {
-    if (!itemToRemove) return;
+    if (itemToRemove) {
+      try {
+        await fetch(`http://localhost:5000/cartItems/${itemToRemove.id}`, {
+          method: 'DELETE',
+        });
 
-    try {
-      const res = await fetch(`http://localhost:8000/cart/${itemToRemove.id}`, {
-        method: "DELETE",
-        headers: getHeaders(),
-        credentials: "include",
-      });
-
-      if (res.status === 401) {
-        throw new Error("Unauthorized. Please login again.");
+        setCart((prevCart) =>
+          prevCart.filter((item) => item.id !== itemToRemove.id)
+        );
+      } catch (error) {
+        console.error('Failed to remove item:', error);
       }
-      if (!res.ok) throw new Error(`Failed to delete: ${res.status}`);
-
-      await fetchCart();
-    } catch (error) {
-      console.error("Failed to remove item:", error);
-      if (error.message.includes("Unauthorized")) {
-        navigate("/login");
-      }
-    } finally {
-      setConfirmOpen(false);
-      setItemToRemove(null);
     }
+    setConfirmOpen(false);
+    setItemToRemove(null);
   };
 
   const closeConfirm = () => {
@@ -83,38 +47,48 @@ function CartPage({ cart, setCart }) {
     setItemToRemove(null);
   };
 
-  const handleQuantityChange = async (id, delta) => {
+  const handleIncrease = async (id) => {
     const item = cart.find((i) => i.id === id);
     if (!item) return;
 
-    const newQuantity = Math.max(1, Math.min((item.quantity || 1) + delta, 10));
+    const updated = { ...item, quantity: Math.min((item.quantity || 1) + 1, 10) };
 
     try {
-      const res = await fetch(`http://localhost:8000/cart/${id}`, {
-        method: "PATCH",
-        headers: getHeaders(),
-        body: JSON.stringify({ quantity: newQuantity }),
-        credentials: "include",
+      await fetch(`http://localhost:5000/cartItems/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated),
       });
 
-      if (res.status === 401) {
-        throw new Error("Unauthorized. Please login again.");
-      }
-      if (!res.ok) throw new Error(`Failed to update: ${res.status}`);
-
-      await fetchCart();
+      setCart((prevCart) => prevCart.map((i) => (i.id === id ? updated : i)));
     } catch (error) {
-      console.error("Failed to update quantity:", error);
-      if (error.message.includes("Unauthorized")) {
-        navigate("/login");
-      }
+      console.error('Failed to increase quantity:', error);
     }
   };
 
-  // Calculate totals
-  const totalWithTaxes = Array.isArray(cart)
-    ? cart.reduce((acc, item) => acc + item.price * (item.quantity || 1), 0)
-    : 0;
+  const handleDecrease = async (id) => {
+    const item = cart.find((i) => i.id === id);
+    if (!item) return;
+
+    const updated = { ...item, quantity: Math.max((item.quantity || 1) - 1, 1) };
+
+    try {
+      await fetch(`http://localhost:5000/cartItems/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated),
+      });
+
+      setCart((prevCart) => prevCart.map((i) => (i.id === id ? updated : i)));
+    } catch (error) {
+      console.error('Failed to decrease quantity:', error);
+    }
+  };
+
+  const totalWithTaxes = cart.reduce(
+    (acc, item) => acc + item.price * (item.quantity || 1),
+    0
+  );
 
   const basePrice = totalWithTaxes / 1.18;
   const vat = Math.round(basePrice * 0.16);
@@ -131,85 +105,128 @@ function CartPage({ cart, setCart }) {
     <main className="cart-page-container" aria-label="Shopping Cart">
       <h2>Your Cart</h2>
 
-      {!Array.isArray(cart) || cart.length === 0 ? (
+      {cart.length === 0 ? (
         <p>No items in cart.</p>
       ) : (
         <>
           <ul className="cart-list">
-            {cart.map((item) => (
-              <li key={item.id} className="cart-item">
-                <div className="item-details">
-                  {item.image && (
-                    <img
-                      src={item.image}
-                      alt={item.item_name}
-                      className="cart-item-image"
-                    />
-                  )}
-                  <span className="item-name">{item.item_name}</span>
-                </div>
+            {cart.map((item) => {
+              const quantity = item.quantity || 1;
+              return (
+                <li key={item.id} className="cart-item">
+                  <div className="item-details">
+                    {item.image && (
+                      <img
+                        src={item.image}
+                        alt={item.itemName}
+                        className="cart-item-image"
+                      />
+                    )}
+                    <span className="item-name">{item.itemName}</span>
+                  </div>
 
-                <span className="item-price">ksh. {formatCurrency(item.price)}</span>
+                  <span className="item-price">ksh. {formatCurrency(item.price)}</span>
 
-                <div className="quantity-controls">
+                  <div className="quantity-controls">
+                    <button onClick={() => handleDecrease(item.id)} type="button">-</button>
+                    <span>{quantity}</span>
+                    <button onClick={() => handleIncrease(item.id)} type="button">+</button>
+                  </div>
+
                   <button
-                    onClick={() => handleQuantityChange(item.id, -1)}
+                    className="remove-btn"
+                    onClick={() => handleRemoveClick(item)}
                     type="button"
-                    aria-label={`Decrease quantity of ${item.item_name}`}
                   >
-                    -
+                    Remove
                   </button>
-                  <span>{item.quantity || 1}</span>
-                  <button
-                    onClick={() => handleQuantityChange(item.id, 1)}
-                    type="button"
-                    aria-label={`Increase quantity of ${item.item_name}`}
-                  >
-                    +
-                  </button>
-                </div>
-
-                <button
-                  onClick={() => handleRemoveClick(item)}
-                  type="button"
-                  aria-label={`Remove ${item.item_name} from cart`}
-                  className="remove-btn"
-                >
-                  Remove
-                </button>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
 
-          <section className="cart-totals" aria-live="polite">
-            <p>Subtotal: ksh. {formatCurrency(subtotal)}</p>
-            <p>VAT (16%): ksh. {formatCurrency(vat)}</p>
-            <p>CTL (2%): ksh. {formatCurrency(ctl)}</p>
-            <hr />
-            <p>
-              <strong>Total: ksh. {formatCurrency(totalWithTaxes)}</strong>
-            </p>
+          <section className="summary">
+            <div className="summary-row">
+              <span>SUB TOTAL :</span>
+              <span>ksh. {formatCurrency(subtotal)}</span>
+            </div>
+            <div className="summary-row">
+              <span>VAT 16% :</span>
+              <span>ksh. {formatCurrency(vat)}</span>
+            </div>
+            <div className="summary-row">
+              <span>CTL 2% :</span>
+              <span>ksh. {formatCurrency(ctl)}</span>
+            </div>
+            <div className="summary-row total">
+              <strong>TOTAL :</strong>
+              <strong>ksh. {formatCurrency(subtotal)}</strong>
+            </div>
           </section>
+
+          <p className="delivery-note">
+            * Delivery charges will be applicable based on your chosen address
+          </p>
+
+          <div className="cart-buttons">
+            <button
+              className="add-more-btn"
+              onClick={() => navigate('/menu')}
+              type="button"
+            >
+              ADD MORE ITEMS
+            </button>
+
+            <button
+              className="checkout-btn"
+              onClick={() => navigate('/checkout')}
+              type="button"
+              disabled={cart.length === 0}
+            >
+              CHECKOUT
+            </button>
+          </div>
         </>
       )}
 
       {confirmOpen && (
         <div
-          className="modal"
+          className="modal-backdrop"
           role="dialog"
           aria-modal="true"
-          aria-labelledby="confirm-title"
+          aria-labelledby="confirmTitle"
+          aria-describedby="confirmDesc"
         >
           <div className="modal-content">
-            <h3 id="confirm-title">Confirm Remove Item</h3>
-            <p>
-              Are you sure you want to remove{" "}
-              <strong>{itemToRemove?.item_name}</strong> from your cart?
+            <h3 id="confirmTitle">Confirm Removal</h3>
+            <p id="confirmDesc">
+              Are you sure you want to remove "<strong>{itemToRemove?.itemName}</strong>" from your cart?
             </p>
-            <button onClick={handleRemoveConfirmed} autoFocus>
-              Yes, Remove
-            </button>
-            <button onClick={closeConfirm}>Cancel</button>
+
+            {itemToRemove?.image && (
+              <img
+                src={itemToRemove.image}
+                alt={itemToRemove.itemName}
+                className="confirm-item-image"
+              />
+            )}
+
+            <div className="modal-buttons">
+              <button
+                onClick={handleRemoveConfirmed}
+                type="button"
+                className="confirm-btn"
+              >
+                Yes
+              </button>
+              <button
+                onClick={closeConfirm}
+                type="button"
+                className="cancel-btn"
+              >
+                No
+              </button>
+            </div>
           </div>
         </div>
       )}
