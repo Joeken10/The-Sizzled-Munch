@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../App'; 
+import { AuthContext } from '../App';
 import './CartPage.css';
 
 function CartPage({ cart, setCart }) {
@@ -9,7 +9,7 @@ function CartPage({ cart, setCart }) {
   const [itemToRemove, setItemToRemove] = useState(null);
   const navigate = useNavigate();
 
-  
+  // Fetch user's cart
   useEffect(() => {
     if (user?.id) {
       fetch(`http://localhost:5000/cartItems?userId=${user.id}`)
@@ -19,27 +19,26 @@ function CartPage({ cart, setCart }) {
     }
   }, [user, setCart]);
 
+  // Remove item flow
   const handleRemoveClick = (item) => {
     setItemToRemove(item);
     setConfirmOpen(true);
   };
 
   const handleRemoveConfirmed = async () => {
-    if (itemToRemove) {
-      try {
-        await fetch(`http://localhost:5000/cartItems/${itemToRemove.id}`, {
-          method: 'DELETE',
-        });
+    if (!itemToRemove) return;
 
-        setCart((prevCart) =>
-          prevCart.filter((item) => item.id !== itemToRemove.id)
-        );
-      } catch (error) {
-        console.error('Failed to remove item:', error);
-      }
+    try {
+      await fetch(`http://localhost:5000/cartItems/${itemToRemove.id}`, {
+        method: 'DELETE',
+      });
+      setCart((prev) => prev.filter((item) => item.id !== itemToRemove.id));
+    } catch (error) {
+      console.error('Failed to remove item:', error);
+    } finally {
+      setConfirmOpen(false);
+      setItemToRemove(null);
     }
-    setConfirmOpen(false);
-    setItemToRemove(null);
   };
 
   const closeConfirm = () => {
@@ -47,60 +46,36 @@ function CartPage({ cart, setCart }) {
     setItemToRemove(null);
   };
 
-  const handleIncrease = async (id) => {
+  // Update item quantity
+  const updateQuantity = async (id, delta) => {
     const item = cart.find((i) => i.id === id);
     if (!item) return;
 
-    const updated = { ...item, quantity: Math.min((item.quantity || 1) + 1, 10) };
+    const newQuantity = Math.max(1, Math.min(10, (item.quantity || 1) + delta));
+    const updatedItem = { ...item, quantity: newQuantity };
 
     try {
       await fetch(`http://localhost:5000/cartItems/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updated),
+        body: JSON.stringify(updatedItem),
       });
 
-      setCart((prevCart) => prevCart.map((i) => (i.id === id ? updated : i)));
+      setCart((prev) => prev.map((i) => (i.id === id ? updatedItem : i)));
     } catch (error) {
-      console.error('Failed to increase quantity:', error);
+      console.error('Failed to update quantity:', error);
     }
   };
 
-  const handleDecrease = async (id) => {
-    const item = cart.find((i) => i.id === id);
-    if (!item) return;
-
-    const updated = { ...item, quantity: Math.max((item.quantity || 1) - 1, 1) };
-
-    try {
-      await fetch(`http://localhost:5000/cartItems/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updated),
-      });
-
-      setCart((prevCart) => prevCart.map((i) => (i.id === id ? updated : i)));
-    } catch (error) {
-      console.error('Failed to decrease quantity:', error);
-    }
-  };
-
-  const totalWithTaxes = cart.reduce(
-    (acc, item) => acc + item.price * (item.quantity || 1),
-    0
-  );
-
-  const basePrice = totalWithTaxes / 1.18;
+  // Price Calculations
+  const subtotal = cart.reduce((acc, item) => acc + item.price * (item.quantity || 1), 0);
+  const basePrice = subtotal / 1.18;
   const vat = Math.round(basePrice * 0.16);
   const ctl = Math.round(basePrice * 0.02);
-  const subtotal = totalWithTaxes;
-
   const formatCurrency = (num) =>
-    num.toLocaleString(undefined, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
+    num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+  // Render
   return (
     <main className="cart-page-container" aria-label="Shopping Cart">
       <h2>Your Cart</h2>
@@ -118,7 +93,7 @@ function CartPage({ cart, setCart }) {
                     {item.image && (
                       <img
                         src={item.image}
-                        alt={item.itemName}
+                        alt={item.itemName || 'Cart item'}
                         className="cart-item-image"
                       />
                     )}
@@ -127,16 +102,17 @@ function CartPage({ cart, setCart }) {
 
                   <span className="item-price">ksh. {formatCurrency(item.price)}</span>
 
-                  <div className="quantity-controls">
-                    <button onClick={() => handleDecrease(item.id)} type="button">-</button>
+                  <div className="quantity-controls" aria-label="Item quantity controls">
+                    <button onClick={() => updateQuantity(item.id, -1)} type="button" aria-label="Decrease quantity">−</button>
                     <span>{quantity}</span>
-                    <button onClick={() => handleIncrease(item.id)} type="button">+</button>
+                    <button onClick={() => updateQuantity(item.id, 1)} type="button" aria-label="Increase quantity">+</button>
                   </div>
 
                   <button
                     className="remove-btn"
                     onClick={() => handleRemoveClick(item)}
                     type="button"
+                    aria-label={`Remove ${item.itemName}`}
                   >
                     Remove
                   </button>
@@ -145,7 +121,7 @@ function CartPage({ cart, setCart }) {
             })}
           </ul>
 
-          <section className="summary">
+          <section className="summary" aria-label="Price Summary">
             <div className="summary-row">
               <span>SUB TOTAL :</span>
               <span>ksh. {formatCurrency(subtotal)}</span>
@@ -206,7 +182,7 @@ function CartPage({ cart, setCart }) {
             {itemToRemove?.image && (
               <img
                 src={itemToRemove.image}
-                alt={itemToRemove.itemName}
+                alt={itemToRemove.itemName || 'Item to remove'}
                 className="confirm-item-image"
               />
             )}
