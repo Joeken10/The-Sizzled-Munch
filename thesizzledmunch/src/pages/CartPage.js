@@ -5,21 +5,49 @@ import './CartPage.css';
 
 function CartPage({ cart, setCart }) {
   const { user } = useContext(AuthContext);
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [itemToRemove, setItemToRemove] = useState(null);
   const navigate = useNavigate();
 
-  // Fetch user's cart
-  useEffect(() => {
-    if (user?.id) {
-      fetch(`http://localhost:5000/cartItems?userId=${user.id}`)
-        .then((res) => res.json())
-        .then((data) => setCart(data))
-        .catch((err) => console.error('Error fetching cart:', err));
-    }
-  }, [user, setCart]);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [itemToRemove, setItemToRemove] = useState(null);
 
-  // Remove item flow
+  const formatCurrency = (num) =>
+    num.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+
+  // Fetch cart items for the logged-in user
+  useEffect(() => {
+    if (!user?.id) return;
+    fetch(`http://localhost:8000/cart_items?userId=${user.id}`)
+      .then((res) => res.json())
+      .then(setCart)
+      .catch((err) => console.error('Error fetching cart:', err));
+  }, [user?.id, setCart]);
+
+  // Quantity updater
+  const updateQuantity = async (id, delta) => {
+    const item = cart.find((i) => i.id === id);
+    if (!item) return;
+
+    const newQuantity = Math.min(10, Math.max(1, (item.quantity || 1) + delta));
+    if (newQuantity === item.quantity) return;
+
+    const updatedItem = { ...item, quantity: newQuantity };
+
+    try {
+      await fetch(`http://localhost:8000/cart_items/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedItem),
+      });
+      setCart((prev) => prev.map((i) => (i.id === id ? updatedItem : i)));
+    } catch (error) {
+      console.error('Failed to update quantity:', error);
+    }
+  };
+
+  // Remove item confirmation
   const handleRemoveClick = (item) => {
     setItemToRemove(item);
     setConfirmOpen(true);
@@ -29,15 +57,14 @@ function CartPage({ cart, setCart }) {
     if (!itemToRemove) return;
 
     try {
-      await fetch(`http://localhost:5000/cartItems/${itemToRemove.id}`, {
+      await fetch(`http://localhost:8000/cart_items/${itemToRemove.id}`, {
         method: 'DELETE',
       });
-      setCart((prev) => prev.filter((item) => item.id !== itemToRemove.id));
+      setCart((prev) => prev.filter((i) => i.id !== itemToRemove.id));
     } catch (error) {
       console.error('Failed to remove item:', error);
     } finally {
-      setConfirmOpen(false);
-      setItemToRemove(null);
+      closeConfirm();
     }
   };
 
@@ -46,36 +73,15 @@ function CartPage({ cart, setCart }) {
     setItemToRemove(null);
   };
 
-  // Update item quantity
-  const updateQuantity = async (id, delta) => {
-    const item = cart.find((i) => i.id === id);
-    if (!item) return;
-
-    const newQuantity = Math.max(1, Math.min(10, (item.quantity || 1) + delta));
-    const updatedItem = { ...item, quantity: newQuantity };
-
-    try {
-      await fetch(`http://localhost:5000/cartItems/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedItem),
-      });
-
-      setCart((prev) => prev.map((i) => (i.id === id ? updatedItem : i)));
-    } catch (error) {
-      console.error('Failed to update quantity:', error);
-    }
-  };
-
-  // Price Calculations
-  const subtotal = cart.reduce((acc, item) => acc + item.price * (item.quantity || 1), 0);
+  // Price calculations
+  const subtotal = cart.reduce(
+    (acc, item) => acc + (item.price || 0) * (item.quantity || 1),
+    0
+  );
   const basePrice = subtotal / 1.18;
   const vat = Math.round(basePrice * 0.16);
   const ctl = Math.round(basePrice * 0.02);
-  const formatCurrency = (num) =>
-    num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  // Render
   return (
     <main className="cart-page-container" aria-label="Shopping Cart">
       <h2>Your Cart</h2>
@@ -85,40 +91,51 @@ function CartPage({ cart, setCart }) {
       ) : (
         <>
           <ul className="cart-list">
-            {cart.map((item) => {
-              const quantity = item.quantity || 1;
-              return (
-                <li key={item.id} className="cart-item">
-                  <div className="item-details">
-                    {item.image && (
-                      <img
-                        src={item.image}
-                        alt={item.itemName || 'Cart item'}
-                        className="cart-item-image"
-                      />
-                    )}
-                    <span className="item-name">{item.itemName}</span>
-                  </div>
+            {cart.map((item) => (
+              <li key={item.id} className="cart-item">
+                <div className="item-details">
+                  {item.image && (
+                    <img
+                      src={item.image}
+                      alt={item.itemName || 'Cart item'}
+                      className="cart-item-image"
+                    />
+                  )}
+                  <span className="item-name">{item.itemName}</span>
+                </div>
 
-                  <span className="item-price">ksh. {formatCurrency(item.price)}</span>
+                <span className="item-price">
+                  ksh. {formatCurrency(item.price || 0)}
+                </span>
 
-                  <div className="quantity-controls" aria-label="Item quantity controls">
-                    <button onClick={() => updateQuantity(item.id, -1)} type="button" aria-label="Decrease quantity">−</button>
-                    <span>{quantity}</span>
-                    <button onClick={() => updateQuantity(item.id, 1)} type="button" aria-label="Increase quantity">+</button>
-                  </div>
-
+                <div className="quantity-controls">
                   <button
-                    className="remove-btn"
-                    onClick={() => handleRemoveClick(item)}
                     type="button"
-                    aria-label={`Remove ${item.itemName}`}
+                    onClick={() => updateQuantity(item.id, -1)}
+                    aria-label="Decrease quantity"
                   >
-                    Remove
+                    −
                   </button>
-                </li>
-              );
-            })}
+                  <span>{item.quantity || 1}</span>
+                  <button
+                    type="button"
+                    onClick={() => updateQuantity(item.id, 1)}
+                    aria-label="Increase quantity"
+                  >
+                    +
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  className="remove-btn"
+                  onClick={() => handleRemoveClick(item)}
+                  aria-label={`Remove ${item.itemName || 'item'}`}
+                >
+                  Remove
+                </button>
+              </li>
+            ))}
           </ul>
 
           <section className="summary" aria-label="Price Summary">
@@ -146,17 +163,17 @@ function CartPage({ cart, setCart }) {
 
           <div className="cart-buttons">
             <button
+              type="button"
               className="add-more-btn"
               onClick={() => navigate('/menu')}
-              type="button"
             >
               ADD MORE ITEMS
             </button>
 
             <button
+              type="button"
               className="checkout-btn"
               onClick={() => navigate('/checkout')}
-              type="button"
               disabled={cart.length === 0}
             >
               CHECKOUT
@@ -176,7 +193,9 @@ function CartPage({ cart, setCart }) {
           <div className="modal-content">
             <h3 id="confirmTitle">Confirm Removal</h3>
             <p id="confirmDesc">
-              Are you sure you want to remove "<strong>{itemToRemove?.itemName}</strong>" from your cart?
+              Are you sure you want to remove{' '}
+              <strong>{itemToRemove?.itemName || 'this item'}</strong> from your
+              cart?
             </p>
 
             {itemToRemove?.image && (
@@ -189,15 +208,15 @@ function CartPage({ cart, setCart }) {
 
             <div className="modal-buttons">
               <button
-                onClick={handleRemoveConfirmed}
                 type="button"
+                onClick={handleRemoveConfirmed}
                 className="confirm-btn"
               >
                 Yes
               </button>
               <button
-                onClick={closeConfirm}
                 type="button"
+                onClick={closeConfirm}
                 className="cancel-btn"
               >
                 No

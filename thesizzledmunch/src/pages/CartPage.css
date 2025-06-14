@@ -491,3 +491,15 @@ h2 {
 .add-more-btn:hover {
   background-color: #ccc;
 }
+.cart-page-container .error {
+  color: red;
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.placeholder-image {
+  width: 80px;
+  height: 80px;
+  background: #ddd;
+  border-radius: 8px;
+}
