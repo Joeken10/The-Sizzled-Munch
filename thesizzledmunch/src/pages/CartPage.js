@@ -19,7 +19,7 @@ function CartPage({ cart, setCart }) {
   // Fetch cart items for the logged-in user
   useEffect(() => {
     if (!user?.id) return;
-    fetch(`http://localhost:8000/cart_items?userId=${user.id}`)
+    fetch(`http://localhost:5000/cart_items?userId=${user.id}`)
       .then((res) => res.json())
       .then(setCart)
       .catch((err) => console.error('Error fetching cart:', err));
@@ -36,7 +36,7 @@ function CartPage({ cart, setCart }) {
     const updatedItem = { ...item, quantity: newQuantity };
 
     try {
-      await fetch(`http://localhost:8000/cart_items/${id}`, {
+      await fetch(`http://localhost:5000/cart_items/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedItem),
@@ -57,7 +57,7 @@ function CartPage({ cart, setCart }) {
     if (!itemToRemove) return;
 
     try {
-      await fetch(`http://localhost:8000/cart_items/${itemToRemove.id}`, {
+      await fetch(`http://localhost:5000/cart_items/${itemToRemove.id}`, {
         method: 'DELETE',
       });
       setCart((prev) => prev.filter((i) => i.id !== itemToRemove.id));
