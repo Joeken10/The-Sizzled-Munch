@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request, session
 from sqlalchemy import or_
-from models import db, MenuItem, User, CartItem
-from serializer import menu_item_to_dict, user_to_dict, cart_item_to_dict
+from models import db, MenuItem, User
+from serializer import menu_item_to_dict, user_to_dict
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS
 
@@ -202,123 +202,6 @@ def delete_menu_item(id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": f"Failed to delete menu item: {str(e)}"}), 500
-
-# ----------- CART -----------
-
-@app.route("/cart", methods=["POST"])
-def add_to_cart():
-    user = get_current_user()
-    if not user:
-        return jsonify({"error": "Unauthorized"}), 401
-
-    data = request.get_json(force=True, silent=True)
-    if not data:
-        return jsonify({"error": "Missing JSON data"}), 400
-
-    menu_item_id = data.get("menu_item_id")
-    quantity = data.get("quantity", 1)
-
-    if not menu_item_id:
-        return jsonify({"error": "menu_item_id is required"}), 400
-
-    try:
-        quantity = int(quantity)
-        if quantity < 1:
-            raise ValueError()
-    except (ValueError, TypeError):
-        return jsonify({"error": "Quantity must be an integer greater than 0"}), 400
-
-    cart_item = CartItem.query.filter_by(user_id=user.id, menu_item_id=menu_item_id).first()
-    if cart_item:
-        cart_item.quantity += quantity
-    else:
-        cart_item = CartItem(user_id=user.id, menu_item_id=menu_item_id, quantity=quantity)
-        db.session.add(cart_item)
-
-    try:
-        db.session.commit()
-        return jsonify(cart_item_to_dict(cart_item)), 201
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": f"Failed to add item to cart: {str(e)}"}), 500
-
-@app.route("/cart", methods=["GET"])
-def get_cart():
-    user = get_current_user()
-    if not user:
-        return jsonify({"error": "Unauthorized"}), 401
-
-    cart_items = CartItem.query.filter_by(user_id=user.id).all()
-    return jsonify([cart_item_to_dict(item) for item in cart_items]), 200
-
-@app.route("/cart/<int:cart_item_id>", methods=["PATCH"])
-def update_cart_item(cart_item_id):
-    user = get_current_user()
-    if not user:
-        return jsonify({"error": "Unauthorized"}), 401
-
-    cart_item = db.session.get(CartItem, cart_item_id)
-    if not cart_item or cart_item.user_id != user.id:
-        return jsonify({"error": "Cart item not found"}), 404
-
-    data = request.get_json(force=True, silent=True)
-    if not data:
-        return jsonify({"error": "Missing JSON data"}), 400
-
-    try:
-        new_quantity = int(data.get("quantity"))
-        if new_quantity < 1:
-            raise ValueError()
-    except (ValueError, TypeError):
-        return jsonify({"error": "Invalid quantity; must be integer >= 1"}), 400
-
-    cart_item.quantity = new_quantity
-
-    try:
-        db.session.commit()
-        return jsonify(cart_item_to_dict(cart_item)), 200
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": f"Failed to update cart item: {str(e)}"}), 500
-
-@app.route("/cart/<int:cart_item_id>", methods=["DELETE"])
-def remove_from_cart(cart_item_id):
-    user = get_current_user()
-    if not user:
-        return jsonify({"error": "Unauthorized"}), 401
-
-    cart_item = db.session.get(CartItem, cart_item_id)
-    if not cart_item or cart_item.user_id != user.id:
-        return jsonify({"error": "Cart item not found"}), 404
-
-    try:
-        db.session.delete(cart_item)
-        db.session.commit()
-        return jsonify({"message": "Item removed from cart"}), 200
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": f"Failed to remove item from cart: {str(e)}"}), 500
-
-# ----------- CHECKOUT -----------
-
-@app.route("/checkout", methods=["POST"])
-def checkout():
-    user = get_current_user()
-    if not user:
-        return jsonify({"error": "Unauthorized"}), 401
-
-    cart_items = CartItem.query.filter_by(user_id=user.id).all()
-    if not cart_items:
-        return jsonify({"error": "Cart is empty"}), 400
-
-    try:
-        for item in cart_items:
-            db.session.delete(item)
-        db.session.commit()
-        return jsonify({"message": "Checkout successful, cart cleared."}), 200
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": f"Checkout failed: {str(e)}"}), 500
 
 # ----------- RUN SERVER -----------
 

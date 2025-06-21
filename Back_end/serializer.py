@@ -14,12 +14,5 @@ def user_to_dict(user):
         "id": user.id,
         "username": user.username,
         "email": user.email
-        # Usually you don’t want to serialize passwords
-    }
-
-def cart_item_to_dict(cart_item):
-    return {
-        "id": cart_item.id,
-        "menu_item": menu_item_to_dict(cart_item.menu_item),
-        "quantity": cart_item.quantity
+        # Password is not included for security reasons
     }
