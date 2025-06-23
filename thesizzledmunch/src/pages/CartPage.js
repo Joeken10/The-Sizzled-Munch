@@ -12,7 +12,7 @@ function CartPage({ cart, setCart }) {
   
   useEffect(() => {
     if (user?.id) {
-      fetch(`http://localhost:8000/cartItems?userId=${user.id}`)
+      fetch(`http://localhost:5000/cart_item?userId=${user.id}`)
         .then((res) => res.json())
         .then((data) => setCart(data))
         .catch((err) => console.error('Error fetching cart:', err));
@@ -27,7 +27,7 @@ function CartPage({ cart, setCart }) {
   const handleRemoveConfirmed = async () => {
     if (itemToRemove) {
       try {
-        await fetch(`http://localhost:8000/cartItems/${itemToRemove.id}`, {
+        await fetch(`http://localhost:5000/cart_item/${itemToRemove.id}`, {
           method: 'DELETE',
         });
 
@@ -54,7 +54,7 @@ function CartPage({ cart, setCart }) {
     const updated = { ...item, quantity: Math.min((item.quantity || 1) + 1, 10) };
 
     try {
-      await fetch(`http://localhost:5000/cartItems/${id}`, {
+      await fetch(`http://localhost:5000/cart_item/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updated),
@@ -73,7 +73,7 @@ function CartPage({ cart, setCart }) {
     const updated = { ...item, quantity: Math.max((item.quantity || 1) - 1, 1) };
 
     try {
-      await fetch(`http://localhost:5000/cartItems/${id}`, {
+      await fetch(`http://localhost:5000/cart_item/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updated),
