@@ -73,7 +73,7 @@ function CartPage({ cart, setCart }) {
     const updated = { ...item, quantity: Math.max((item.quantity || 1) - 1, 1) };
 
     try {
-      await fetch(`http://localhost:5000/cart_item/${id}`, {
+      await fetch(`http://localhost:000/cart_item/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updated),
