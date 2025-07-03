@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../App'; 
+import { AuthContext } from '../App';
 import './CartPage.css';
 
 function CartPage({ cart, setCart }) {
@@ -9,12 +9,13 @@ function CartPage({ cart, setCart }) {
   const [itemToRemove, setItemToRemove] = useState(null);
   const navigate = useNavigate();
 
-  
   useEffect(() => {
     if (user?.id) {
-      fetch(`http://localhost:5000/cart_item?userId=${user.id}`)
+      fetch(`http://localhost:8000/cart_items?user_id=${user.id}`)
         .then((res) => res.json())
-        .then((data) => setCart(data))
+        .then((data) => {
+          setCart(Array.isArray(data) ? data : []);
+        })
         .catch((err) => console.error('Error fetching cart:', err));
     }
   }, [user, setCart]);
@@ -27,10 +28,9 @@ function CartPage({ cart, setCart }) {
   const handleRemoveConfirmed = async () => {
     if (itemToRemove) {
       try {
-        await fetch(`http://localhost:5000/cart_item/${itemToRemove.id}`, {
+        await fetch(`http://localhost:8000/cart_items/${itemToRemove.id}`, {
           method: 'DELETE',
         });
-
         setCart((prevCart) =>
           prevCart.filter((item) => item.id !== itemToRemove.id)
         );
@@ -47,42 +47,36 @@ function CartPage({ cart, setCart }) {
     setItemToRemove(null);
   };
 
-  const handleIncrease = async (id) => {
-    const item = cart.find((i) => i.id === id);
-    if (!item) return;
-
-    const updated = { ...item, quantity: Math.min((item.quantity || 1) + 1, 10) };
-
+  const updateQuantity = async (id, newQuantity) => {
     try {
-      await fetch(`http://localhost:5000/cart_item/${id}`, {
+      await fetch(`http://localhost:8000/cart_items/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updated),
+        body: JSON.stringify({ quantity: newQuantity }),
       });
 
-      setCart((prevCart) => prevCart.map((i) => (i.id === id ? updated : i)));
+      setCart((prevCart) =>
+        prevCart.map((i) =>
+          i.id === id ? { ...i, quantity: newQuantity } : i
+        )
+      );
     } catch (error) {
-      console.error('Failed to increase quantity:', error);
+      console.error('Failed to update quantity:', error);
     }
   };
 
-  const handleDecrease = async (id) => {
+  const handleIncrease = (id) => {
     const item = cart.find((i) => i.id === id);
     if (!item) return;
+    const newQuantity = Math.min((item.quantity || 1) + 1, 10);
+    updateQuantity(id, newQuantity);
+  };
 
-    const updated = { ...item, quantity: Math.max((item.quantity || 1) - 1, 1) };
-
-    try {
-      await fetch(`http://localhost:000/cart_item/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updated),
-      });
-
-      setCart((prevCart) => prevCart.map((i) => (i.id === id ? updated : i)));
-    } catch (error) {
-      console.error('Failed to decrease quantity:', error);
-    }
+  const handleDecrease = (id) => {
+    const item = cart.find((i) => i.id === id);
+    if (!item) return;
+    const newQuantity = Math.max((item.quantity || 1) - 1, 1);
+    updateQuantity(id, newQuantity);
   };
 
   const totalWithTaxes = cart.reduce(
@@ -110,39 +104,48 @@ function CartPage({ cart, setCart }) {
       ) : (
         <>
           <ul className="cart-list">
-            {cart.map((item) => {
-              const quantity = item.quantity || 1;
-              return (
-                <li key={item.id} className="cart-item">
-                  <div className="item-details">
-                    {item.image && (
-                      <img
-                        src={item.image}
-                        alt={item.itemName}
-                        className="cart-item-image"
-                      />
-                    )}
-                    <span className="item-name">{item.itemName}</span>
-                  </div>
+            {cart.map((item) => (
+              <li key={item.id} className="cart-item">
+                <div className="item-details">
+                  {item.image_url && (
+                    <img
+                      src={item.image_url}
+                      alt={item.item_name}
+                      className="cart-item-image"
+                    />
+                  )}
+                  <span className="item-name">{item.item_name}</span>
+                </div>
 
-                  <span className="item-price">ksh. {formatCurrency(item.price)}</span>
+                <span className="item-price">
+                  ksh. {formatCurrency(item.price)}
+                </span>
 
-                  <div className="quantity-controls">
-                    <button onClick={() => handleDecrease(item.id)} type="button">-</button>
-                    <span>{quantity}</span>
-                    <button onClick={() => handleIncrease(item.id)} type="button">+</button>
-                  </div>
-
+                <div className="quantity-controls">
                   <button
-                    className="remove-btn"
-                    onClick={() => handleRemoveClick(item)}
+                    onClick={() => handleDecrease(item.id)}
                     type="button"
                   >
-                    Remove
+                    -
                   </button>
-                </li>
-              );
-            })}
+                  <span>{item.quantity}</span>
+                  <button
+                    onClick={() => handleIncrease(item.id)}
+                    type="button"
+                  >
+                    +
+                  </button>
+                </div>
+
+                <button
+                  className="remove-btn"
+                  onClick={() => handleRemoveClick(item)}
+                  type="button"
+                >
+                  Remove
+                </button>
+              </li>
+            ))}
           </ul>
 
           <section className="summary">
@@ -200,13 +203,14 @@ function CartPage({ cart, setCart }) {
           <div className="modal-content">
             <h3 id="confirmTitle">Confirm Removal</h3>
             <p id="confirmDesc">
-              Are you sure you want to remove "<strong>{itemToRemove?.itemName}</strong>" from your cart?
+              Are you sure you want to remove "
+              <strong>{itemToRemove?.item_name}</strong>" from your cart?
             </p>
 
-            {itemToRemove?.image && (
+            {itemToRemove?.image_url && (
               <img
-                src={itemToRemove.image}
-                alt={itemToRemove.itemName}
+                src={itemToRemove.image_url}
+                alt={itemToRemove.item_name}
                 className="confirm-item-image"
               />
             )}

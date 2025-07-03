@@ -25,6 +25,7 @@
   color: #d9b382;
 }
 
+
 .navbar-links {
   display: flex;
   gap: 2rem;
@@ -56,6 +57,7 @@
   left: 0;
   background-color: #d9b382;
 }
+
 
 .navbar-search {
   display: flex;
@@ -97,6 +99,7 @@
   background-color: #b98a51;
 }
 
+
 .navbar-icons {
   display: flex;
   align-items: center;
@@ -132,6 +135,7 @@
   font-weight: bold;
 }
 
+
 .nav-username {
   font-size: 0.95rem;
   color: #f0e9d2;
@@ -155,6 +159,7 @@
   border-color: #b98a51;
 }
 
+
 .signup-link {
   font-size: 0.95rem;
   color: #d9b382;
@@ -168,7 +173,6 @@
   text-decoration: underline;
 }
 
-/* Responsive tweaks */
 @media (max-width: 768px) {
   .navbar {
     flex-direction: column;

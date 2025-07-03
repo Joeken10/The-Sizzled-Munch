@@ -1,13 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { useLocation } from 'react-router-dom';
 import './MenuList.css';
 import MenuItem from './MenuItem';
+import { AuthContext } from '../App';
 
 function MenuList({ cart, setCart }) {
   const [menuItems, setMenuItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const { user } = useContext(AuthContext);
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const searchQuery = queryParams.get('search')?.toLowerCase() || '';
@@ -29,33 +31,53 @@ function MenuList({ cart, setCart }) {
       .finally(() => setLoading(false));
   }, []);
 
-  // Handle adding to cart
-  const handleAddToCart = (item) => {
-    setCart((prevCart) => {
-      const existingIndex = prevCart.findIndex((cartItem) => cartItem.id === item.id);
+  
+  const handleAddToCart = async (item) => {
+    if (!user?.id) {
+      alert('You must be logged in to add items to cart.');
+      return;
+    }
 
-      let updatedCart;
-      if (existingIndex >= 0) {
-        updatedCart = prevCart.map((cartItem, idx) =>
-          idx === existingIndex
-            ? { ...cartItem, quantity: (cartItem.quantity || 1) + 1 }
-            : cartItem
-        );
-      } else {
-        updatedCart = [...prevCart, { ...item, quantity: 1 }];
+    try {
+      const response = await fetch('http://localhost:8000/cart_items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          menu_item_id: item.id,
+          quantity: 1,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to add item to cart');
       }
 
-      console.log('Cart updated:', updatedCart); // ✅ Debug log
-      return updatedCart;
-    });
+      const newItem = await response.json();
+
+      setCart((prevCart) => {
+        const existing = prevCart.find((cartItem) => cartItem.id === newItem.id);
+        if (existing) {
+          return prevCart.map((cartItem) =>
+            cartItem.id === newItem.id
+              ? { ...cartItem, quantity: cartItem.quantity + 1 }
+              : cartItem
+          );
+        } else {
+          return [...prevCart, { ...item, ...newItem, quantity: 1 }];
+        }
+      });
+    } catch (error) {
+      console.error(error);
+      alert('Failed to add item to cart');
+    }
   };
 
-  // Filter by search query
+ 
   const filteredItems = menuItems.filter((item) =>
     item.item_name.toLowerCase().includes(searchQuery)
   );
 
-  // Render
   return (
     <div className="menuList-container">
       {loading ? (

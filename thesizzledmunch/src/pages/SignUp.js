@@ -64,7 +64,7 @@ function SignUp() {
 
     setLoading(true);
     try {
-      // Check if username or email already exists
+      
       const checkRes = await fetch(`http://127.0.0.1:8000/users/check?username=${username}&email=${email}`);
       if (!checkRes.ok) throw new Error('Failed to check existing user');
       const checkData = await checkRes.json();
@@ -220,4 +220,3 @@ function SignUp() {
 export default SignUp;
 
 
-//picking up from backend//
