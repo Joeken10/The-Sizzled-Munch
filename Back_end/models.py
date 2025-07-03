@@ -1,53 +1,54 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.dialects.postgresql import JSON
 from werkzeug.security import generate_password_hash, check_password_hash
-import uuid
 
 db = SQLAlchemy()
-
-class MenuItem(db.Model):
-    __tablename__ = 'menu_items'
-
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    item_name = db.Column(db.String(100), nullable=False)
-    category = db.Column(db.String(50), nullable=False)
-    price = db.Column(db.Float, nullable=False)
-    description = db.Column(db.Text, nullable=True)
-    image = db.Column(db.String(255), nullable=True)
-    extras = db.Column(JSON, nullable=True)
-
-    def __repr__(self):
-        return f"<MenuItem {self.item_name} - {self.category}>"
-
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "item_name": self.item_name,
-            "category": self.category,
-            "price": self.price,
-            "description": self.description,
-            "image": self.image,
-            "extras": self.extras or []
-        }
 
 class User(db.Model):
     __tablename__ = 'users'
 
-    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    _password = db.Column("password", db.String(128), nullable=False)
+    password_hash = db.Column(db.String(512), nullable=False)
 
-    def __repr__(self):
-        return f"<User {self.username}>"
+    cart_items = db.relationship('CartItem', backref='user', cascade='all, delete-orphan')
 
-    @property
-    def password(self):
-        raise AttributeError("Password is write-only")
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
 
-    @password.setter
-    def password(self, plaintext_password):
-        self._password = generate_password_hash(plaintext_password)
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
 
-    def check_password(self, plaintext_password):
-        return check_password_hash(self._password, plaintext_password)
+
+class MenuItem(db.Model):
+    __tablename__ = 'menu_items'
+
+    id = db.Column(db.Integer, primary_key=True)
+    item_name = db.Column(db.String(120), nullable=False)
+    category = db.Column(db.String(80), nullable=False)
+    price = db.Column(db.Integer, nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    image_url = db.Column(db.String(255), nullable=True)
+
+    cart_items = db.relationship('CartItem', backref='menu_item', cascade='all, delete-orphan')
+
+
+class CartItem(db.Model):
+    __tablename__ = 'cart_items'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    menu_item_id = db.Column(db.Integer, db.ForeignKey('menu_items.id'), nullable=False)
+    quantity = db.Column(db.Integer, nullable=False, default=1)
+
+class CartSummary(db.Model):
+    __tablename__ = 'cart_summaries'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    subtotal = db.Column(db.Float, nullable=False)
+    vat = db.Column(db.Float, nullable=False)
+    ctl = db.Column(db.Float, nullable=False)
+    total = db.Column(db.Float, nullable=False)
+
+    user = db.relationship('User', backref='cart_summaries')
+

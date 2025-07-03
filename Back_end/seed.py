@@ -1,7 +1,8 @@
 from app import app
 from models import db, MenuItem
 
-menu_data = [
+menu_data = [ 
+  
     {
         "id": 1,
         "image": "/images/Classic American Burger with Fried Egg.jpeg",
@@ -112,26 +113,18 @@ menu_data = [
     }
 ]
 
+
+
 with app.app_context():
-    # Create tables if they don't exist
-    db.create_all()
-
-    # Delete all existing records to avoid duplicates
-    MenuItem.query.delete()
-    db.session.commit()
-
-    # Insert all menu items
     for item in menu_data:
-        menu_item = MenuItem(
-            id=item["id"],
-            item_name=item["item_name"],
-            category=item["category"],
-            price=item["price"],
-            description=item["description"],
-            image=item["image"],
-            extras=item["extras"]  # expects extras to be JSON type or handled in model
-        )
-        db.session.add(menu_item)
-
+        exists = MenuItem.query.filter_by(item_name=item["item_name"]).first()
+        if not exists:
+            db.session.add(MenuItem(
+                item_name=item["item_name"],
+                category=item["category"],
+                price=item["price"],
+                description=item["description"],
+                image_url=item["image"]
+            ))
     db.session.commit()
-    print("Seeded full menu including IDs and extras!")
+    print(" Menu items seeded.")
