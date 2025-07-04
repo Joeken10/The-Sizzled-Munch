@@ -8,7 +8,9 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
-import MenuManagement from './pages/MenuManagement'; 
+import MenuManagement from './pages/MenuManagement';
+import MyOrders from './pages/MyOrders';
+import AdminOrders from './pages/AdminOrders';
 
 export const AuthContext = createContext();
 
@@ -39,6 +41,8 @@ function App() {
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/admin/menu" element={<MenuManagement />} />
+          <Route path="/orders" element={<MyOrders />} />
+          <Route path="/admin/orders" element={<AdminOrders />} />
         </Routes>
         <Footer />
       </BrowserRouter>

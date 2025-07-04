@@ -75,13 +75,30 @@ function Navbar({ cartItemCount }) {
         {user ? (
           <>
             <span className="nav-username">Hello, {user.username}</span>
-            {user.isAdmin && (
+            {user.isAdmin ? (
+              <>
+                <button
+                  onClick={() => navigate('/admin/menu')}
+                  className="admin-button"
+                  aria-label="Manage Menu"
+                >
+                  Menu Management
+                </button>
+                <button
+                  onClick={() => navigate('/admin/orders')}
+                  className="admin-button"
+                  aria-label="View All Orders"
+                >
+                  Orders
+                </button>
+              </>
+            ) : (
               <button
-                onClick={() => navigate('/admin/menu')}
+                onClick={() => navigate('/orders')}
                 className="admin-button"
-                aria-label="Manage Menu"
+                aria-label="My Orders"
               >
-                Menu Management
+                My Orders
               </button>
             )}
             <button

@@ -1,3 +1,4 @@
+// ✅ CheckoutPage.jsx (Fully Updated & Corrected)
 import React, { useState, useRef, useContext } from 'react';
 import './CheckoutPage.css';
 import { useNavigate } from 'react-router-dom';
@@ -89,7 +90,6 @@ function CheckoutPage({ cart, setCart }) {
     const total = subtotal;
 
     try {
-    
       await fetch('http://localhost:8000/cart_summaries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -102,13 +102,27 @@ function CheckoutPage({ cart, setCart }) {
         }),
       });
 
-     
+      const orderRes = await fetch('http://localhost:8000/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          items: cart.map(item => ({
+            menu_item_id: item.menu_item_id,  // ✅ Fixed here
+            quantity: item.quantity || 1,
+            price: item.price,
+          })),
+        }),
+      });
+
+      const orderData = await orderRes.json();
+
       await fetch(`http://localhost:8000/clear_cart/${user.id}`, {
         method: 'DELETE',
       });
 
-      
       setOrderSnapshot({
+        orderId: orderData.order_id,
         items: snapshotItems,
         total,
         subtotal,
@@ -118,10 +132,9 @@ function CheckoutPage({ cart, setCart }) {
         date: new Date().toLocaleString(),
       });
 
-      // Clear frontend cart
       setSubmitted(true);
       setCart([]);
-      localStorage.removeItem('cart'); 
+      localStorage.removeItem('cart');
     } catch (error) {
       console.error('Checkout failed:', error);
     }
@@ -130,9 +143,10 @@ function CheckoutPage({ cart, setCart }) {
   const downloadReceipt = () => {
     if (!orderSnapshot) return;
 
-    const { customer, items, total, subtotal, vat, ctl, date } = orderSnapshot;
+    const { customer, items, total, subtotal, vat, ctl, date, orderId } = orderSnapshot;
 
     let receiptText = '*** RECEIPT ***\n';
+    receiptText += `Order ID: ${orderId}\n`;
     receiptText += `Date: ${date}\n\n`;
 
     receiptText += 'Customer Details:\n';
@@ -157,7 +171,7 @@ function CheckoutPage({ cart, setCart }) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `receipt_${Date.now()}.txt`;
+    a.download = `receipt_${orderId}.txt`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -178,21 +192,18 @@ function CheckoutPage({ cart, setCart }) {
       {!submitted ? (
         <>
           <h2>Checkout</h2>
-
           <section className="checkout-summary" aria-label="Order Summary">
             <h3>Order Summary</h3>
             <ul>
               {cart.map(item => (
                 <li key={item.id}>
-                  {item.item_name} x {item.quantity || 1} — ksh.{' '}
-                  {formatCurrency(item.price * (item.quantity || 1))}
+                  {item.item_name} x {item.quantity || 1} — ksh. {formatCurrency(item.price * (item.quantity || 1))}
                 </li>
               ))}
             </ul>
             <p>
               <strong>
-                Total: ksh.{' '}
-                {formatCurrency(cart.reduce((acc, item) => acc + item.price * (item.quantity || 1), 0))}
+                Total: ksh. {formatCurrency(cart.reduce((acc, item) => acc + item.price * (item.quantity || 1), 0))}
               </strong>
             </p>
           </section>
@@ -237,6 +248,7 @@ function CheckoutPage({ cart, setCart }) {
 
           <section className="receipt-details" style={{ marginTop: '1.5rem' }}>
             <h3>Order Summary</h3>
+            <p><strong>Order ID:</strong> {orderSnapshot.orderId}</p>
             <p><strong>Order Date:</strong> {orderSnapshot.date}</p>
 
             <h4>Customer Details</h4>
