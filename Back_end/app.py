@@ -658,5 +658,60 @@ def admin_confirm_order(order_id):
     return jsonify({'message': 'Order marked as fully completed by admin'})
 
 
+# new stuff 
+
+@app.route('/admin/analytics', methods=['GET'])
+def admin_analytics():
+    total_sales = db.session.query(db.func.sum(Order.total_amount)).scalar() or 0
+    total_orders = db.session.query(Order).count()
+    most_popular_items = (
+        db.session.query(
+            MenuItem.item_name,
+            db.func.sum(OrderItem.quantity).label('total_sold')
+        )
+        .join(OrderItem)
+        .group_by(MenuItem.item_name)
+        .order_by(db.desc('total_sold'))
+        .limit(5)
+        .all()
+    )
+
+    return jsonify({
+        'total_sales': total_sales,
+        'total_orders': total_orders,
+        'most_popular_items': [{'item': name, 'sold': sold} for name, sold in most_popular_items]
+    })
+
+
+@app.route('/user/<int:user_id>/profile', methods=['GET', 'PATCH', 'DELETE'])
+def user_profile(user_id):
+    user = User.query.get_or_404(user_id)
+
+    if request.method == 'GET':
+        return jsonify({
+            "username": user.username,
+            "email": user.email,
+            "delivery_address": user.delivery_address,
+            "phone_number": user.phone_number,
+            "profile_image": user.profile_image  # ✅ Include image in response
+        })
+
+    if request.method == 'PATCH':
+        data = request.json
+        user.username = data.get('username', user.username)
+        user.email = data.get('email', user.email)
+        user.delivery_address = data.get('delivery_address', user.delivery_address)
+        user.phone_number = data.get('phone_number', user.phone_number)
+        user.profile_image = data.get('profile_image', user.profile_image)  # ✅ Save image
+        db.session.commit()
+        return jsonify({"message": "Profile updated successfully"})
+
+    if request.method == 'DELETE':
+        db.session.delete(user)
+        db.session.commit()
+        return jsonify({"message": "Profile deleted successfully"})
+
+
+
 if __name__ == '__main__':
     app.run(port=8000, debug=True)

@@ -3,7 +3,9 @@ def serialize_user(user):
         "id": user.id,
         "username": user.username,
         "email": user.email,
-        "isAdmin": False  
+        "isAdmin": False,
+        "delivery_address": user.delivery_address,
+        "phone_number": user.phone_number
     }
 
 def serialize_admin(admin):
@@ -11,7 +13,7 @@ def serialize_admin(admin):
         "id": admin.id,
         "username": admin.username,
         "email": admin.email,
-        "isAdmin": True  
+        "isAdmin": True
     }
 
 def serialize_menu_item(item):
@@ -21,17 +23,19 @@ def serialize_menu_item(item):
         "category": item.category,
         "price": item.price,
         "description": item.description,
-        "image": item.image_url,
+        "image": item.image_url,  
         "extras": item.extras or []  
     }
 
+
 def serialize_cart_item(cart_item):
+    menu_item = cart_item.menu_item
     return {
         "id": cart_item.id,
         "user_id": cart_item.user_id,
-        "menu_item_id": cart_item.menu_item_id, 
+        "menu_item_id": cart_item.menu_item_id,
         "quantity": cart_item.quantity,
-        "item_name": cart_item.menu_item.item_name,
-        "price": cart_item.menu_item.price,      
-        "image": cart_item.menu_item.image_url
+        "item_name": getattr(menu_item, 'item_name', None),
+        "price": getattr(menu_item, 'price', 0),
+        "image_url": getattr(menu_item, 'image_url', None)
     }

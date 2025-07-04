@@ -10,6 +10,9 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(512), nullable=False)
+    delivery_address = db.Column(db.String(255), nullable=True)
+    phone_number = db.Column(db.String(20), nullable=True)
+    profile_image = db.Column(db.String(500)) 
 
     cart_items = db.relationship('CartItem', backref='user', cascade='all, delete-orphan')
     cart_summaries = db.relationship('CartSummary', backref='user', cascade='all, delete-orphan')
@@ -20,6 +23,9 @@ class User(db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    def __repr__(self):
+        return f"<User {self.username}>"
 
 
 class AdminUser(db.Model):
