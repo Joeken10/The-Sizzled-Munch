@@ -31,7 +31,7 @@ function MenuList({ cart, setCart }) {
       .finally(() => setLoading(false));
   }, []);
 
-  
+  // Add to Cart with duplicate prevention
   const handleAddToCart = async (item) => {
     if (!user?.id) {
       alert('You must be logged in to add items to cart.');
@@ -56,15 +56,20 @@ function MenuList({ cart, setCart }) {
       const newItem = await response.json();
 
       setCart((prevCart) => {
-        const existing = prevCart.find((cartItem) => cartItem.id === newItem.id);
+        const existing = prevCart.find(
+          (cartItem) => cartItem.menu_item_id === newItem.menu_item_id
+        );
+
         if (existing) {
+          // Update quantity of existing item
           return prevCart.map((cartItem) =>
-            cartItem.id === newItem.id
+            cartItem.menu_item_id === newItem.menu_item_id
               ? { ...cartItem, quantity: cartItem.quantity + 1 }
               : cartItem
           );
         } else {
-          return [...prevCart, { ...item, ...newItem, quantity: 1 }];
+          // Add new item to cart
+          return [...prevCart, { ...newItem, ...item, quantity: 1 }];
         }
       });
     } catch (error) {
@@ -73,7 +78,7 @@ function MenuList({ cart, setCart }) {
     }
   };
 
- 
+  // Filter items by search query
   const filteredItems = menuItems.filter((item) =>
     item.item_name.toLowerCase().includes(searchQuery)
   );

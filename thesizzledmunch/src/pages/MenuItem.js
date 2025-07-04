@@ -8,17 +8,19 @@ function MenuItem({ menuAlbum, onAddToCart }) {
         {menuAlbum.map((item) => (
           <article className="card" key={item.id} aria-label={item.item_name}>
             <img
-              src={item.image} 
+              src={item.image || '/images/placeholder.png'}
               className="card-img-top"
               alt={item.item_name || 'Menu item image'}
               loading="lazy"
             />
             <div className="card-body">
               <h5 className="card-title">{item.item_name}</h5>
-              <p className="card-price">ksh. {item.price.toFixed(2)}</p>
-              
+              <p className="card-price">
+                ksh. {item.price.toFixed(2)}
+              </p>
+
               {item.extras && <p className="card-text">{item.extras}</p>}
-              
+
               {item.description && (
                 <p className="card-description">{item.description}</p>
               )}

@@ -9,7 +9,6 @@ function Navbar({ cartItemCount }) {
   const { user, setUser } = useContext(AuthContext);
   const [searchInput, setSearchInput] = useState('');
 
- 
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchInput.trim()) {
@@ -18,10 +17,8 @@ function Navbar({ cartItemCount }) {
     }
   };
 
-  
   const handleLogout = async () => {
     try {
-      
       await fetch('http://localhost:8000/logout', {
         method: 'POST',
         credentials: 'include',
@@ -78,6 +75,15 @@ function Navbar({ cartItemCount }) {
         {user ? (
           <>
             <span className="nav-username">Hello, {user.username}</span>
+            {user.isAdmin && (
+              <button
+                onClick={() => navigate('/admin/menu')}
+                className="admin-button"
+                aria-label="Manage Menu"
+              >
+                Menu Management
+              </button>
+            )}
             <button
               onClick={handleLogout}
               className="logout-button"

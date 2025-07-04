@@ -1,8 +1,8 @@
 import React, { useState, useContext } from 'react';
-import './AuthForms.css'; 
+import './AuthForms.css';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../App';
-import { auth, provider, signInWithPopup } from '../firebase'; 
+import { auth, provider, signInWithPopup } from '../firebase';
 
 function SignUp() {
   const { setUser } = useContext(AuthContext);
@@ -64,7 +64,6 @@ function SignUp() {
 
     setLoading(true);
     try {
-      
       const checkRes = await fetch(`http://127.0.0.1:8000/users/check?username=${username}&email=${email}`);
       if (!checkRes.ok) throw new Error('Failed to check existing user');
       const checkData = await checkRes.json();
@@ -106,7 +105,6 @@ function SignUp() {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      // Check if user exists by email
       const res = await fetch(`http://127.0.0.1:8000/users/check?email=${user.email}`);
       if (!res.ok) throw new Error('Failed to check existing user');
       const existingUsers = await res.json();
@@ -115,7 +113,7 @@ function SignUp() {
         const newUser = {
           username: user.displayName || user.email.split('@')[0],
           email: user.email,
-          password: '',
+          password: '',  // No password for Google users
         };
         await fetch('http://127.0.0.1:8000/signup', {
           method: 'POST',
@@ -124,7 +122,15 @@ function SignUp() {
         });
       }
 
-      setUser({ username: user.displayName, email: user.email, id: user.uid });
+      // Optionally, fetch full user profile from backend after signup:
+      const profileRes = await fetch(`http://127.0.0.1:8000/users/profile?email=${user.email}`);
+      if (profileRes.ok) {
+        const userProfile = await profileRes.json();
+        setUser(userProfile);
+      } else {
+        setUser({ username: user.displayName, email: user.email });
+      }
+
       navigate('/');
     } catch (error) {
       alert("Google sign-in failed");
@@ -168,7 +174,6 @@ function SignUp() {
             className="toggle-password"
             onClick={() => setShowPassword(prev => !prev)}
             style={{ cursor: 'pointer' }}
-            aria-label="Toggle password visibility"
           >
             {showPassword ? '🙈' : '👁️'}
           </span>
@@ -195,7 +200,6 @@ function SignUp() {
             className="toggle-password"
             onClick={() => setShowConfirmPassword(prev => !prev)}
             style={{ cursor: 'pointer' }}
-            aria-label="Toggle confirm password visibility"
           >
             {showConfirmPassword ? '🙈' : '👁️'}
           </span>
@@ -218,5 +222,3 @@ function SignUp() {
 }
 
 export default SignUp;
-
-

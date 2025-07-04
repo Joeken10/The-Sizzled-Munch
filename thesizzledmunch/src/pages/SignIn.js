@@ -1,11 +1,11 @@
 import React, { useState, useContext } from 'react';
-import './AuthForms.css'; 
+import './AuthForms.css';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../App';
 
 function SignIn() {
   const { setUser } = useContext(AuthContext);
-  const [identifier, setIdentifier] = useState(''); // username or email
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
@@ -19,27 +19,29 @@ function SignIn() {
     }
 
     try {
-      // Send username or email as "username" field per your backend (adjust if needed)
-      const response = await fetch('http://localhost:8000/signin', {
+      const response = await fetch(`http://localhost:8000/signin`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // important for session cookies
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ username: identifier, password }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        setUser(data);
-        navigate('/');
+        setUser(data);  // Backend sends { isAdmin: true/false }
+        // Redirect based on role
+        if (data.isAdmin) {
+          navigate('/admin/menu');
+        } else {
+          navigate('/');
+        }
       } else {
         alert(data.error || 'Invalid username/email or password');
       }
     } catch (error) {
-      alert('An error occurred. Please try again later.');
       console.error('SignIn error:', error);
+      alert('An error occurred. Please try again later.');
     }
   };
 
@@ -51,7 +53,7 @@ function SignIn() {
           type="text"
           placeholder="Username or Email"
           value={identifier}
-          onChange={e => setIdentifier(e.target.value)}
+          onChange={(e) => setIdentifier(e.target.value)}
           required
         />
 
@@ -59,7 +61,7 @@ function SignIn() {
           type={showPassword ? 'text' : 'password'}
           placeholder="Password"
           value={password}
-          onChange={e => setPassword(e.target.value)}
+          onChange={(e) => setPassword(e.target.value)}
           required
         />
 
@@ -68,7 +70,7 @@ function SignIn() {
             <input
               type="checkbox"
               checked={showPassword}
-              onChange={() => setShowPassword(prev => !prev)}
+              onChange={() => setShowPassword((prev) => !prev)}
             />
             Show Password
           </label>
@@ -76,7 +78,10 @@ function SignIn() {
 
         <button type="submit">Sign In</button>
       </form>
-      <p>Don't have an account? <Link to="/signup">Sign Up here</Link></p>
+
+      <p>
+        Don't have an account? <Link to="/signup">Sign Up here</Link>
+      </p>
     </div>
   );
 }
