@@ -11,6 +11,8 @@ import SignUp from './pages/SignUp';
 import MenuManagement from './pages/MenuManagement';
 import MyOrders from './pages/MyOrders';
 import AdminOrders from './pages/AdminOrders';
+import AdminDashboard from './pages/AdminDashboard'; // ✅ New Page
+import UserProfile from './pages/UserProfile';       // ✅ New Page
 
 export const AuthContext = createContext();
 
@@ -43,6 +45,8 @@ function App() {
           <Route path="/admin/menu" element={<MenuManagement />} />
           <Route path="/orders" element={<MyOrders />} />
           <Route path="/admin/orders" element={<AdminOrders />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />  
+          <Route path="/profile" element={<UserProfile userId={user?.id} />} /> 
         </Routes>
         <Footer />
       </BrowserRouter>

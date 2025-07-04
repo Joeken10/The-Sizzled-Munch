@@ -503,3 +503,18 @@ h2 {
   background: #ddd;
   border-radius: 8px;
 }
+.my-orders-btn {
+  background-color: #4caf50;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 1rem;
+  transition: background-color 0.3s ease;
+}
+
+.my-orders-btn:hover {
+  background-color: #388e3c;
+}

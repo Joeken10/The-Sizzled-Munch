@@ -75,6 +75,7 @@ function Navbar({ cartItemCount }) {
         {user ? (
           <>
             <span className="nav-username">Hello, {user.username}</span>
+
             {user.isAdmin ? (
               <>
                 <button
@@ -91,23 +92,40 @@ function Navbar({ cartItemCount }) {
                 >
                   Orders
                 </button>
+                <button
+                  onClick={() => navigate('/admin/dashboard')}
+                  className="admin-button"
+                  aria-label="Admin Dashboard"
+                >
+                  Dashboard
+                </button>
+                {/* ✅ Admins keep Logout in Navbar */}
+                <button
+                  onClick={handleLogout}
+                  className="logout-button"
+                  aria-label="Logout"
+                >
+                  Logout
+                </button>
               </>
             ) : (
-              <button
-                onClick={() => navigate('/orders')}
-                className="admin-button"
-                aria-label="My Orders"
-              >
-                My Orders
-              </button>
+              <>
+                <button
+                  onClick={() => navigate('/orders')}
+                  className="admin-button"
+                  aria-label="My Orders"
+                >
+                  My Orders
+                </button>
+                <Link to="/profile" className="profile-avatar" aria-label="My Profile">
+                  <img
+                    src={user.profile_image || '/default-avatar.png'}
+                    alt="My Profile"
+                    className="avatar-img"
+                  />
+                </Link>
+              </>
             )}
-            <button
-              onClick={handleLogout}
-              className="logout-button"
-              aria-label="Logout"
-            >
-              Logout
-            </button>
           </>
         ) : (
           <>
