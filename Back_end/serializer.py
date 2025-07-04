@@ -29,9 +29,9 @@ def serialize_cart_item(cart_item):
     return {
         "id": cart_item.id,
         "user_id": cart_item.user_id,
-        "menu_item_id": cart_item.menu_item_id,
+        "menu_item_id": cart_item.menu_item_id, 
         "quantity": cart_item.quantity,
         "item_name": cart_item.menu_item.item_name,
-        "price": cart_item.menu_item.price,
+        "price": cart_item.menu_item.price,      
         "image": cart_item.menu_item.image_url
     }

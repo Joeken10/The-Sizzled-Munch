@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, session
 from flask_migrate import Migrate
 from flask_cors import CORS
 from sqlalchemy.exc import IntegrityError
-from models import db, User, AdminUser, MenuItem, CartItem, CartSummary
+from models import db, User, AdminUser, MenuItem, CartItem, CartSummary, Order, OrderItem
 from serializer import serialize_user, serialize_admin, serialize_menu_item, serialize_cart_item
 
 app = Flask(__name__)
@@ -464,6 +464,198 @@ def clear_cart(user_id):
         db.session.delete(item)
     db.session.commit()
     return jsonify({"message": "Cart cleared."}), 200
+
+
+@app.route('/users/<int:user_id>/orders', methods=['GET'])
+def get_user_orders(user_id):
+    orders = Order.query.filter_by(user_id=user_id).order_by(Order.created_at.desc()).all()
+    order_list = []
+    for order in orders:
+        order_data = {
+            'id': order.id,
+            'total_amount': order.total_amount,
+            'created_at': order.created_at.isoformat(),
+            'status': order.status,
+            'user_confirmed': order.user_confirmed,
+            'admin_confirmed': order.admin_confirmed,
+            'items': []
+        }
+        for item in order.items:
+            menu_item = db.session.get(MenuItem, item.menu_item_id)
+            order_data['items'].append({
+                'item_name': menu_item.item_name if menu_item else 'Unknown Item',
+                'quantity': item.quantity,
+                'price': item.price
+            })
+        order_list.append(order_data)
+
+    return jsonify({'orders': order_list})
+
+@app.route('/admin/users/<int:user_id>/orders', methods=['GET'])
+def admin_view_user_orders(user_id):
+    return get_user_orders(user_id)  
+
+
+@app.route('/orders', methods=['POST'])
+def create_order():
+    data = request.json
+    user_id = data['user_id']
+    items = data['items']  
+
+    # Validate items
+    valid_menu_item_ids = {item.id for item in MenuItem.query.all()}
+    invalid_items = [item for item in items if item['menu_item_id'] not in valid_menu_item_ids]
+    if invalid_items:
+        return jsonify({
+            "error": "Some menu items in your order do not exist.",
+            "invalid_items": invalid_items
+        }), 400
+
+    # Calculate total
+    total = sum(item['quantity'] * item['price'] for item in items)
+
+    # Create order
+    order = Order(user_id=user_id, total_amount=total)
+    db.session.add(order)
+    db.session.flush()  
+
+    
+    for item in items:
+        order_item = OrderItem(
+            order_id=order.id,
+            menu_item_id=item['menu_item_id'],
+            quantity=item['quantity'],
+            price=item['price']
+        )
+        db.session.add(order_item)
+
+    db.session.commit()
+    return jsonify({"message": "Order placed successfully", "order_id": order.id}), 201
+
+
+@app.route('/orders/<int:user_id>', methods=['GET'])
+def get_orders(user_id):
+    orders = Order.query.filter_by(user_id=user_id).all()
+    active_orders = []
+    history_orders = []
+
+    for order in orders:
+        order_data = {
+            'id': order.id,
+            'total_amount': order.total_amount,
+            'created_at': order.created_at.isoformat(),
+            'status': order.status,
+            'items': []
+        }
+
+        for item in order.items:
+            menu_item = MenuItem.query.get(item.menu_item_id)
+            order_data['items'].append({
+                'item_name': menu_item.item_name if menu_item else 'Unknown Item',
+                'quantity': item.quantity,
+                'price': item.price
+            })
+
+        if order.user_confirmed:
+            history_orders.append(order_data)
+        else:
+            active_orders.append(order_data)
+
+    return jsonify({
+        'active_orders': active_orders,
+        'history_orders': history_orders
+    })
+
+
+@app.route('/orders/<int:user_id>/confirm/<int:order_id>', methods=['PATCH'])
+def confirm_order_received(user_id, order_id):
+    order = Order.query.filter_by(id=order_id, user_id=user_id).first()
+    if not order:
+        return jsonify({'error': 'Order not found'}), 404
+
+    if not order.user_confirmed:
+        order.user_confirmed = True
+        db.session.commit()
+
+    return jsonify({'message': 'Order confirmed received and moved to history'})
+
+
+
+@app.route('/admin/orders', methods=['GET'])
+def get_all_orders_admin():
+    orders = Order.query.all()
+    active_orders = []
+    history_orders = []
+
+    for order in orders:
+        order_data = {
+            'id': order.id,
+            'total_amount': order.total_amount,
+            'created_at': order.created_at.isoformat(),
+            'status': order.status,
+            'user': {
+                'id': order.user.id,
+                'username': order.user.username
+            },
+            'items': []
+        }
+
+        for item in order.items:
+            menu_item = MenuItem.query.get(item.menu_item_id)
+            order_data['items'].append({
+                'item_name': menu_item.item_name if menu_item else 'Unknown Item',
+                'quantity': item.quantity,
+                'price': item.price
+            })
+
+        # ✅ Correct logic here:
+        if order.status != 'Completed':
+            active_orders.append(order_data)
+        elif order.user_confirmed and not order.admin_confirmed:
+            active_orders.append(order_data)  # Admin still needs to confirm
+        elif order.user_confirmed and order.admin_confirmed:
+            history_orders.append(order_data)  # Fully finalized
+
+    return jsonify({
+        'active_orders': active_orders,
+        'history_orders': history_orders
+    })
+
+
+@app.route('/admin/orders/<int:order_id>/status', methods=['PATCH'])
+def advance_order_status(order_id):
+    order = db.session.get(Order, order_id)
+    if not order:
+        return jsonify({'error': 'Order not found'}), 404
+
+    status_flow = ['Pending', 'Preparing', 'Ready', 'Completed']
+
+    if order.status not in status_flow:
+        return jsonify({'error': 'Invalid current status'}), 400
+
+    current_index = status_flow.index(order.status)
+    if current_index < len(status_flow) - 1:
+        order.status = status_flow[current_index + 1]
+        db.session.commit()
+        return jsonify({'message': 'Order status updated', 'new_status': order.status}), 200
+    else:
+        return jsonify({'error': 'Order is already at final stage'}), 400
+
+
+@app.route('/admin/orders/<int:order_id>/confirm', methods=['PATCH'])
+def admin_confirm_order(order_id):
+    order = db.session.get(Order, order_id)
+    if not order:
+        return jsonify({'error': 'Order not found'}), 404
+
+    if not order.user_confirmed:
+        return jsonify({'error': 'User has not confirmed receipt yet'}), 400
+
+    if not order.admin_confirmed:
+        order.admin_confirmed = True
+        db.session.commit()
+
+    return jsonify({'message': 'Order marked as fully completed by admin'})
 
 
 if __name__ == '__main__':
