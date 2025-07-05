@@ -82,6 +82,11 @@ function SignIn() {
       <p>
         Don't have an account? <Link to="/signup">Sign Up here</Link>
       </p>
+      <p>
+        <Link to="/forgot_password" className="forgot-link">
+          Forgot Password?
+        </Link>
+      </p>
     </div>
   );
 }

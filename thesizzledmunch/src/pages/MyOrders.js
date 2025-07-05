@@ -2,6 +2,8 @@ import React, { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../App';
 import './MyOrders.css';
 
+const API_BASE_URL = 'http://localhost:8000'; // ✅ Easily change this later for production
+
 function MyOrders() {
   const { user } = useContext(AuthContext);
   const [orders, setOrders] = useState([]);
@@ -11,7 +13,9 @@ function MyOrders() {
 
   useEffect(() => {
     if (user) {
-      fetch(`http://localhost:8000/orders/${user.id}`)
+      fetch(`${API_BASE_URL}/orders/${user.id}`, {
+        credentials: 'include',  // ✅ Include session cookie
+      })
         .then((res) => {
           if (!res.ok) throw new Error('Failed to fetch orders');
           return res.json();
@@ -19,20 +23,20 @@ function MyOrders() {
         .then((data) => {
           setOrders(data.active_orders);
           setConfirmedOrders(data.history_orders);
-          setLoading(false);
         })
         .catch((err) => {
           console.error(err);
           setError('Failed to fetch orders. Try again later.');
-          setLoading(false);
-        });
+        })
+        .finally(() => setLoading(false));
     }
   }, [user]);
 
   const handleConfirmReceived = async (orderId) => {
     try {
-      const res = await fetch(`http://localhost:8000/orders/${user.id}/confirm/${orderId}`, {
+      const res = await fetch(`${API_BASE_URL}/orders/${user.id}/confirm/${orderId}`, {
         method: 'PATCH',
+        credentials: 'include',  // ✅ Include session cookie
       });
       if (!res.ok) throw new Error('Failed to confirm order');
 
@@ -43,6 +47,7 @@ function MyOrders() {
       }
     } catch (err) {
       console.error('Error confirming order:', err);
+      alert('Failed to confirm order. Please try again.');
     }
   };
 
@@ -58,7 +63,7 @@ function MyOrders() {
 
       {hasPendingOrders && (
         <div className="warning-banner">
-          ⚠️ You have active orders that are still in progress. 
+          ⚠️ You have active orders still in progress.
           Please wait until they are marked as <strong>Completed</strong> before confirming.
         </div>
       )}
@@ -78,15 +83,15 @@ function MyOrders() {
                 </li>
               ))}
             </ul>
+
             <div className="status-progress">
               {['Pending', 'Preparing', 'Ready', 'Completed'].map((stage) => (
                 <div
                   key={stage}
                   className={`stage ${
-                    stage === order.status ||
-                    (stage === 'Pending' && ['Preparing', 'Ready', 'Completed'].includes(order.status)) ||
-                    (stage === 'Preparing' && ['Ready', 'Completed'].includes(order.status)) ||
-                    (stage === 'Ready' && order.status === 'Completed')
+                    ['Pending', 'Preparing', 'Ready', 'Completed']
+                      .slice(0, ['Pending', 'Preparing', 'Ready', 'Completed'].indexOf(order.status) + 1)
+                      .includes(stage)
                       ? 'completed'
                       : ''
                   }`}

@@ -9,10 +9,11 @@ import Footer from './components/Footer';
 import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
 import MenuManagement from './pages/MenuManagement';
-import MyOrders from './pages/MyOrders';
 import AdminOrders from './pages/AdminOrders';
-import AdminDashboard from './pages/AdminDashboard'; // ✅ New Page
-import UserProfile from './pages/UserProfile';       // ✅ New Page
+import AdminDashboard from './pages/AdminDashboard';
+import UserProfile from './pages/UserProfile';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';  
+import ResetPasswordPage from './pages/ResetPasswordPage';   
 
 export const AuthContext = createContext();
 
@@ -43,10 +44,13 @@ function App() {
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/admin/menu" element={<MenuManagement />} />
-          <Route path="/orders" element={<MyOrders />} />
           <Route path="/admin/orders" element={<AdminOrders />} />
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />  
-          <Route path="/profile" element={<UserProfile userId={user?.id} />} /> 
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/profile" element={<UserProfile userId={user?.id} />} />
+          
+          
+          <Route path="/forgot_password" element={<ForgotPasswordPage />} />
+          <Route path="/reset_password/:token" element={<ResetPasswordPage />} />
         </Routes>
         <Footer />
       </BrowserRouter>
