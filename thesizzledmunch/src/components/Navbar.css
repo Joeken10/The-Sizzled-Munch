@@ -1,4 +1,4 @@
-/* Navbar Container */
+
 .navbar {
   display: flex;
   align-items: center;
@@ -14,7 +14,7 @@
   flex-wrap: wrap;
 }
 
-/* Logo */
+
 .navbar-logo .logo-text {
   font-size: 2rem;
   font-weight: bold;
@@ -27,7 +27,7 @@
   color: #d9b382;
 }
 
-/* Links */
+
 .navbar-links {
   display: flex;
   gap: 1.5rem;
@@ -60,7 +60,7 @@
   left: 0;
 }
 
-/* Search Bar */
+
 .navbar-search {
   display: flex;
   align-items: center;
@@ -99,11 +99,12 @@
   background-color: #b98a51;
 }
 
-/* Icons and Buttons */
+
 .navbar-icons {
   display: flex;
   align-items: center;
   gap: 1.25rem;
+  flex-wrap: wrap;
 }
 
 .icon-link {
@@ -141,8 +142,8 @@
   font-weight: 500;
 }
 
-/* Admin Buttons */
-.admin-button {
+
+.nav-button {
   background-color: #44403c;
   color: #ffffff;
   padding: 8px 12px;
@@ -153,11 +154,11 @@
   transition: background-color 0.3s ease;
 }
 
-.admin-button:hover {
+.nav-button:hover {
   background-color: #292524;
 }
 
-/* Avatar */
+
 .avatar-img {
   width: 42px;
   height: 42px;
@@ -173,7 +174,7 @@
   border-color: #b98a51;
 }
 
-/* Logout Button (for Admins only) */
+
 .logout-button {
   background-color: transparent;
   border: 1px solid #d9b382;
@@ -191,7 +192,7 @@
   border-color: #b98a51;
 }
 
-/* Signup Link */
+
 .signup-link {
   font-size: 0.95rem;
   color: #d9b382;
@@ -205,7 +206,7 @@
   text-decoration: underline;
 }
 
-/* Mobile Responsive */
+
 @media (max-width: 768px) {
   .navbar {
     flex-direction: column;

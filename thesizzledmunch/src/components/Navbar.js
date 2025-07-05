@@ -80,39 +80,31 @@ function Navbar({ cartItemCount }) {
               <>
                 <button
                   onClick={() => navigate('/admin/menu')}
-                  className="admin-button"
+                  className="nav-button"
                   aria-label="Manage Menu"
                 >
                   Menu Management
                 </button>
                 <button
                   onClick={() => navigate('/admin/orders')}
-                  className="admin-button"
+                  className="nav-button"
                   aria-label="View All Orders"
                 >
                   Orders
                 </button>
                 <button
                   onClick={() => navigate('/admin/dashboard')}
-                  className="admin-button"
+                  className="nav-button"
                   aria-label="Admin Dashboard"
                 >
                   Dashboard
-                </button>
-                {/* ✅ Admins keep Logout in Navbar */}
-                <button
-                  onClick={handleLogout}
-                  className="logout-button"
-                  aria-label="Logout"
-                >
-                  Logout
                 </button>
               </>
             ) : (
               <>
                 <button
-                  onClick={() => navigate('/orders')}
-                  className="admin-button"
+                  onClick={() => navigate('/my-orders')}
+                  className="nav-button"
                   aria-label="My Orders"
                 >
                   My Orders
@@ -126,6 +118,14 @@ function Navbar({ cartItemCount }) {
                 </Link>
               </>
             )}
+
+            <button
+              onClick={handleLogout}
+              className="logout-button"
+              aria-label="Logout"
+            >
+              Logout
+            </button>
           </>
         ) : (
           <>

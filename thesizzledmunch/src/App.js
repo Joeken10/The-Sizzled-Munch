@@ -12,8 +12,9 @@ import MenuManagement from './pages/MenuManagement';
 import AdminOrders from './pages/AdminOrders';
 import AdminDashboard from './pages/AdminDashboard';
 import UserProfile from './pages/UserProfile';
-import ForgotPasswordPage from './pages/ForgotPasswordPage';  
-import ResetPasswordPage from './pages/ResetPasswordPage';   
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import MyOrders from './pages/MyOrders';
 
 export const AuthContext = createContext();
 
@@ -48,6 +49,8 @@ function App() {
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/profile" element={<UserProfile userId={user?.id} />} />
           
+     
+          <Route path="/my-orders" element={<MyOrders />} />
           
           <Route path="/forgot_password" element={<ForgotPasswordPage />} />
           <Route path="/reset_password/:token" element={<ResetPasswordPage />} />
