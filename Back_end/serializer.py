@@ -8,6 +8,7 @@ def serialize_user(user):
         "phone_number": user.phone_number
     }
 
+
 def serialize_admin(admin):
     return {
         "id": admin.id,
@@ -16,15 +17,16 @@ def serialize_admin(admin):
         "isAdmin": True
     }
 
+
 def serialize_menu_item(item):
     return {
         "id": item.id,
         "item_name": item.item_name,
         "category": item.category,
-        "price": item.price,
+        "price": float(item.price),  # ✅ Ensure number, not Decimal
         "description": item.description,
-        "image": item.image_url,  
-        "extras": item.extras or []  
+        "image": item.image_url,
+        "extras": item.extras or []  # ✅ Default to empty list
     }
 
 
@@ -36,6 +38,6 @@ def serialize_cart_item(cart_item):
         "menu_item_id": cart_item.menu_item_id,
         "quantity": cart_item.quantity,
         "item_name": getattr(menu_item, 'item_name', None),
-        "price": getattr(menu_item, 'price', 0),
+        "price": float(getattr(menu_item, 'price', 0)),  # ✅ Safe cast to float
         "image_url": getattr(menu_item, 'image_url', None)
     }
