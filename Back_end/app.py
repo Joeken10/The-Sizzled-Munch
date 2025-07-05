@@ -573,60 +573,14 @@ def clear_cart(user_id):
         db.session.delete(item)
     db.session.commit()
     return jsonify({"message": "Cart cleared."}), 200
-
-
-
-
-
-@app.route('/admin/users/<int:user_id>/orders', methods=['GET'])
-def admin_view_user_orders(user_id):
-    return get_user_orders(user_id)  
-
-
-@app.route('/orders', methods=['POST'])
-def create_order():
-    data = request.json
-    user_id = data['user_id']
-    items = data['items']
-
-    # Validate items
-    valid_menu_item_ids = {item.id for item in MenuItem.query.all()}
-    invalid_items = [item for item in items if item['menu_item_id'] not in valid_menu_item_ids]
-    if invalid_items:
-        return jsonify({
-            "error": "Some menu items in your order do not exist.",
-            "invalid_items": invalid_items
-        }), 400
-
-    # ✅ Calculate total safely (force float conversion)
-    total = sum(item['quantity'] * float(item['price']) for item in items)
-
-    # Create order
-    order = Order(user_id=user_id, total_amount=total)
-    db.session.add(order)
-    db.session.flush()  # To get order.id
-
-    for item in items:
-        order_item = OrderItem(
-            order_id=order.id,
-            menu_item_id=item['menu_item_id'],
-            quantity=item['quantity'],
-            price=float(item['price'])  # ✅ Safe float conversion here too
-        )
-        db.session.add(order_item)
-
-    db.session.commit()
-    return jsonify({"message": "Order placed successfully", "order_id": order.id}), 201
-
-
-@app.route('/orders/<int:user_id>', methods=['GET'])
-def get_orders(user_id):
+def fetch_user_orders(user_id):
     orders = (
         Order.query
         .filter_by(user_id=user_id)
         .order_by(Order.created_at.desc())
         .all()
     )
+
     active_orders = []
     history_orders = []
 
@@ -634,44 +588,6 @@ def get_orders(user_id):
         order_data = {
             'id': order.id,
             'total_amount': float(order.total_amount),
-            'created_at': order.created_at.isoformat(),
-            'status': order.status,
-            'items': []
-        }
-
-        for item in order.items:
-            menu_item = db.session.get(MenuItem, item.menu_item_id)
-            order_data['items'].append({
-                'item_name': menu_item.item_name if menu_item else 'Unknown Item',
-                'quantity': item.quantity,
-                'price': float(item.price)
-            })
-
-        if order.user_confirmed:
-            history_orders.append(order_data)
-        else:
-            active_orders.append(order_data)
-
-    return jsonify({
-        'active_orders': active_orders,
-        'history_orders': history_orders
-    })
-
-
-@app.route('/users/<int:user_id>/orders', methods=['GET'])
-def get_user_orders(user_id):
-    orders = (
-        Order.query
-        .filter_by(user_id=user_id)
-        .order_by(Order.created_at.desc())
-        .all()
-    )
-
-    order_list = []
-    for order in orders:
-        order_data = {
-            'id': order.id,
-            'total_amount': float(order.total_amount),  # ✅ Safe for JSON
             'created_at': order.created_at.isoformat() if order.created_at else None,
             'status': order.status,
             'user_confirmed': order.user_confirmed,
@@ -684,12 +600,71 @@ def get_user_orders(user_id):
             order_data['items'].append({
                 'item_name': menu_item.item_name if menu_item else 'Unknown Item',
                 'quantity': item.quantity,
-                'price': float(item.price)  # ✅ Safe for JSON
+                'price': float(item.price)
             })
 
-        order_list.append(order_data)
+     
+        if order.user_confirmed:
+            history_orders.append(order_data)
+        else:
+            active_orders.append(order_data)
 
-    return jsonify({'orders': order_list}), 200
+    return jsonify({
+        'active_orders': active_orders,
+        'history_orders': history_orders
+    }), 200
+
+
+
+@app.route('/users/<int:user_id>/orders', methods=['GET'])
+def get_user_orders(user_id):
+    return fetch_user_orders(user_id)
+
+
+
+@app.route('/admin/users/<int:user_id>/orders', methods=['GET'])
+def admin_view_user_orders(user_id):
+    return fetch_user_orders(user_id)
+
+
+
+@app.route('/orders', methods=['POST'])
+def create_order():
+    data = request.json
+    user_id = data.get('user_id')
+    items = data.get('items', [])
+
+    if not user_id or not items:
+        return jsonify({'error': 'User ID and items are required.'}), 400
+
+   
+    valid_menu_item_ids = {item.id for item in MenuItem.query.all()}
+    invalid_items = [item for item in items if item['menu_item_id'] not in valid_menu_item_ids]
+    if invalid_items:
+        return jsonify({
+            "error": "Some menu items in your order do not exist.",
+            "invalid_items": invalid_items
+        }), 400
+
+    
+    total = sum(item['quantity'] * float(item['price']) for item in items)
+
+    
+    order = Order(user_id=user_id, total_amount=total)
+    db.session.add(order)
+    db.session.flush()  
+
+    for item in items:
+        order_item = OrderItem(
+            order_id=order.id,
+            menu_item_id=item['menu_item_id'],
+            quantity=item['quantity'],
+            price=float(item['price'])
+        )
+        db.session.add(order_item)
+
+    db.session.commit()
+    return jsonify({"message": "Order placed successfully", "order_id": order.id}), 201
 
 
 
@@ -703,12 +678,13 @@ def confirm_order_received(user_id, order_id):
         order.user_confirmed = True
         db.session.commit()
 
-    return jsonify({'message': 'Order confirmed and moved to history'})
+    return jsonify({'message': 'Order confirmed and moved to history'}), 200
+
 
 
 @app.route('/admin/orders', methods=['GET'])
 def get_all_orders_admin():
-    orders = Order.query.all()
+    orders = Order.query.order_by(Order.created_at.desc()).all()
     active_orders = []
     history_orders = []
 
@@ -733,18 +709,17 @@ def get_all_orders_admin():
                 'price': float(item.price)
             })
 
-        # ✅ Updated logic for better clarity:
-        if order.status != 'Completed':
-            active_orders.append(order_data)
-        elif order.user_confirmed and not order.admin_confirmed:
-            active_orders.append(order_data)
-        elif order.user_confirmed and order.admin_confirmed:
+        
+        if order.user_confirmed and order.admin_confirmed:
             history_orders.append(order_data)
+        else:
+            active_orders.append(order_data)
 
     return jsonify({
         'active_orders': active_orders,
         'history_orders': history_orders
-    })
+    }), 200
+
 
 
 @app.route('/admin/orders/<int:order_id>/status', methods=['PATCH'])
@@ -767,6 +742,7 @@ def advance_order_status(order_id):
         return jsonify({'error': 'Order is already at final stage'}), 400
 
 
+
 @app.route('/admin/orders/<int:order_id>/confirm', methods=['PATCH'])
 def admin_confirm_order(order_id):
     order = db.session.get(Order, order_id)
@@ -780,7 +756,11 @@ def admin_confirm_order(order_id):
         order.admin_confirmed = True
         db.session.commit()
 
-    return jsonify({'message': 'Order marked as fully completed by admin'})
+    return jsonify({'message': 'Order marked as fully completed by admin'}), 200
+
+
+
+
 
 
 @app.route('/admin/analytics', methods=['GET'])

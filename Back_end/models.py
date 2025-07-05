@@ -1,5 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime  # ✅ Added for created_at
 
 db = SQLAlchemy()
 
@@ -14,7 +15,7 @@ class User(db.Model):
     delivery_address = db.Column(db.String(255))
     phone_number = db.Column(db.String(20))
     profile_image = db.Column(db.String(500))
-    
+
     # ✅ Email Verification Fields
     verification_code = db.Column(db.String(6), index=True)
     verification_code_sent_at = db.Column(db.DateTime)
@@ -113,7 +114,7 @@ class Order(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     status = db.Column(db.String(50), default='Pending')  # e.g., Pending, Preparing, Ready, Completed
     total_amount = db.Column(db.Numeric(10, 2), nullable=False)
-    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)  # ✅ FIXED
     user_confirmed = db.Column(db.Boolean, default=False)
     admin_confirmed = db.Column(db.Boolean, default=False)
 
