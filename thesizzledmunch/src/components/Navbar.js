@@ -99,6 +99,13 @@ function Navbar({ cartItemCount }) {
                 >
                   Dashboard
                 </button>
+                <button
+                  onClick={handleLogout}
+                  className="logout-button"
+                  aria-label="Logout"
+                >
+                  Logout
+                </button>
               </>
             ) : (
               <>
@@ -116,16 +123,9 @@ function Navbar({ cartItemCount }) {
                     className="avatar-img"
                   />
                 </Link>
+                {/* Logout button for normal users moved inside Profile page */}
               </>
             )}
-
-            <button
-              onClick={handleLogout}
-              className="logout-button"
-              aria-label="Logout"
-            >
-              Logout
-            </button>
           </>
         ) : (
           <>
