@@ -1,0 +1,155 @@
+.menu-management {
+  padding: 40px 20px;
+  background-color: #f8f8f8;
+  min-height: 100vh;
+}
+
+.menu-management h2 {
+  text-align: center;
+  font-size: 2rem;
+  margin-bottom: 30px;
+  color: #222;
+  letter-spacing: 0.5px;
+}
+
+.menu-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 40px;
+}
+
+.menu-form input,
+.menu-form textarea {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  width: 260px;
+  font-size: 1rem;
+  background-color: #fff;
+  transition: border 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.menu-form input:focus,
+.menu-form textarea:focus {
+  border-color: #020464;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(2, 0, 100, 0.2);
+}
+
+.menu-form textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.menu-form button {
+  padding: 12px 24px;
+  background-color: #02001f;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out, transform 0.1s ease;
+  font-size: 1rem;
+}
+
+.menu-form button:hover {
+  background-color: #020464;
+}
+
+.menu-form button:active {
+  transform: scale(0.98);
+}
+
+.cancel-button {
+  background-color: #999;
+}
+
+.cancel-button:hover {
+  background-color: #666;
+}
+
+.menu-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 24px;
+}
+
+.menu-item {
+  width: 260px;
+  height: 500px;
+  background-color: rgba(153, 156, 160, 0.15);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-align: center;
+  transition: transform 0.2s ease-in-out, background-color 0.3s ease-in-out;
+}
+
+.menu-item:hover {
+  transform: translateY(-6px);
+}
+
+.menu-item h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.menu-item p {
+  font-size: 0.9rem;
+  color: #555;
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+.menu-image {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 8px;
+  background-color: #e0e0e0;
+  border: 1px solid #ccc;
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.actions button {
+  flex: 1;
+  padding: 8px;
+  background-color: #02001f;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out, transform 0.1s ease;
+  font-size: 0.85rem;
+}
+
+.actions button:hover {
+  background-color: #020464;
+}
+
+.actions button:active {
+  transform: scale(0.95);
+}
+
+
+@media (max-width: 480px) {
+  .menu-item {
+    width: 100%;
+    max-width: 300px;
+  }
+}
