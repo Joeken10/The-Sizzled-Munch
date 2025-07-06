@@ -1,5 +1,8 @@
 import React, { useState, createContext, useEffect } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 import HomePages from './pages/HomePages';
 import MenuList from './pages/MenuList';
 import CartPage from './pages/CartPage';
@@ -48,14 +51,22 @@ function App() {
           <Route path="/admin/orders" element={<AdminOrders />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/profile" element={<UserProfile userId={user?.id} />} />
-          
-     
           <Route path="/my-orders" element={<MyOrders />} />
-          
           <Route path="/forgot_password" element={<ForgotPasswordPage />} />
           <Route path="/reset_password/:token" element={<ResetPasswordPage />} />
         </Routes>
         <Footer />
+        <ToastContainer
+          position="top-center" 
+          autoClose={6000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="colored"
+        />
       </BrowserRouter>
     </AuthContext.Provider>
   );

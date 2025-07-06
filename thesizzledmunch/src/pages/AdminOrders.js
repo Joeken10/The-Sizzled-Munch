@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import './AdminOrders.css';
+import { toast } from 'react-toastify';
 
 function AdminOrders() {
   const [orders, setOrders] = useState([]);
   const [historyOrders, setHistoryOrders] = useState([]);
 
-  
   useEffect(() => {
     fetch('http://localhost:8000/admin/orders')
       .then((res) => res.json())
@@ -13,10 +13,12 @@ function AdminOrders() {
         setOrders(data.active_orders);
         setHistoryOrders(data.history_orders);
       })
-      .catch((err) => console.error('Failed to fetch orders:', err));
+      .catch((err) => {
+        console.error('Failed to fetch orders:', err);
+        toast.error('Failed to load orders.');
+      });
   }, []);
 
-  
   const handleAdvanceStatus = async (orderId) => {
     try {
       const res = await fetch(`http://localhost:8000/admin/orders/${orderId}/status`, {
@@ -30,15 +32,16 @@ function AdminOrders() {
             order.id === orderId ? { ...order, status: data.new_status } : order
           )
         );
+        toast.success(`Order #${orderId} advanced to ${data.new_status}`);
       } else {
-        console.error('Failed to advance status');
+        toast.error('Failed to advance status');
       }
     } catch (error) {
       console.error('Error advancing status:', error);
+      toast.error('Network error while updating status');
     }
   };
 
-  
   const handleAdminConfirm = async (orderId) => {
     try {
       const res = await fetch(`http://localhost:8000/admin/orders/${orderId}/confirm`, {
@@ -51,24 +54,24 @@ function AdminOrders() {
           setHistoryOrders((prev) => [...prev, confirmedOrder]);
           setOrders((prev) => prev.filter((o) => o.id !== orderId));
         }
-        alert('Order fully confirmed and archived.');
+        toast.success(`Order #${orderId} fully confirmed and archived`);
       } else {
         const data = await res.json();
-        alert(data.error);
+        toast.error(data.error || 'Failed to confirm order');
       }
     } catch (error) {
       console.error('Error confirming order:', error);
+      toast.error('Network error while confirming order');
     }
   };
 
- 
   const handleClearHistory = () => {
     const password = prompt('Enter Admin Password to Clear History:');
     if (password === 'adminpassword123') {
       setHistoryOrders([]);
-      alert('Order history cleared successfully (local only).');
+      toast.success('Order history cleared (local only)');
     } else {
-      alert('Incorrect password. Action canceled.');
+      toast.error('Incorrect password. Action canceled.');
     }
   };
 

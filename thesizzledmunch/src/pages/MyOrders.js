@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../App';
 import './MyOrders.css';
+import { toast } from 'react-toastify';  
 
 const API_BASE_URL = 'http://localhost:8000';
 
@@ -31,6 +32,7 @@ function MyOrders() {
       } catch (err) {
         console.error('Fetch Orders Error:', err);
         setError('Failed to fetch orders. Please try again later.');
+        toast.error('Failed to fetch orders.');  // ✅ Toast on fetch error
       } finally {
         setLoading(false);
       }
@@ -55,9 +57,11 @@ function MyOrders() {
           history: [...prev.history, confirmedOrder],
         };
       });
+
+      toast.success(`Order #${orderId} confirmed successfully.`);  // ✅ Toast on success
     } catch (err) {
       console.error('Error confirming order:', err);
-      alert(err.message || 'Failed to confirm order. Please try again.');
+      toast.error(err.message || 'Failed to confirm order.');  // ✅ Toast on error
     }
   };
 
