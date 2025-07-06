@@ -1,4 +1,3 @@
-// ✅ CheckoutPage.jsx (Fully Updated & Corrected)
 import React, { useState, useRef, useContext } from 'react';
 import './CheckoutPage.css';
 import { useNavigate } from 'react-router-dom';
@@ -7,12 +6,7 @@ import { AuthContext } from '../App';
 
 const GOOGLE_API_KEY = process.env.REACT_APP_GOOGLE_API_KEY;
 const libraries = ['places'];
-
-const paymentMethods = [
-  'MPesa', 'Credit Card', 'Debit Card', 'PayPal',
-  'Apple Pay', 'Google Pay', 'Bank Transfer',
-  'Cash on Delivery', 'Cryptocurrency', 'Gift Card',
-];
+const paymentMethods = ['MPesa', 'Stripe', 'PayPal'];
 
 function CheckoutPage({ cart, setCart }) {
   const { user } = useContext(AuthContext);
@@ -24,6 +18,7 @@ function CheckoutPage({ cart, setCart }) {
     email: '',
     address: '',
     paymentMethod: '',
+    phone: '',  // ✅ Phone number for MPesa
   });
 
   const [submitted, setSubmitted] = useState(false);
@@ -51,6 +46,13 @@ function CheckoutPage({ cart, setCart }) {
     if (!formData.paymentMethod) {
       newErrors.paymentMethod = 'Please select a payment method';
     }
+    if (formData.paymentMethod === 'MPesa') {
+      if (!formData.phone.trim()) {
+        newErrors.phone = 'Phone number is required for MPesa';
+      } else if (!/^2547\d{8}$/.test(formData.phone.trim())) {
+        newErrors.phone = 'Phone number must start with 2547 and be 12 digits';
+      }
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -71,9 +73,47 @@ function CheckoutPage({ cart, setCart }) {
     }
   };
 
+  const processPayment = async () => {
+    if (formData.paymentMethod === 'MPesa') {
+      try {
+        const res = await fetch('http://localhost:8000/pay_mpesa', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone_number: formData.phone,
+            amount: cart.reduce((acc, item) => acc + item.price * (item.quantity || 1), 0),
+          }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert('MPesa payment initiated. Complete payment on your phone.');
+          return { success: true, transactionId: data.transaction_id };
+        } else {
+          alert('MPesa payment failed: ' + data.error);
+          return { success: false };
+        }
+      } catch (error) {
+        console.error('MPesa Error:', error);
+        alert('Failed to initiate MPesa payment.');
+        return { success: false };
+      }
+    } else if (formData.paymentMethod === 'Stripe') {
+      alert('Simulating Stripe payment...');
+      return { success: true, transactionId: 'STRIPE_TXN_12345' };
+    } else if (formData.paymentMethod === 'PayPal') {
+      alert('Simulating PayPal payment...');
+      return { success: true, transactionId: 'PAYPAL_TXN_67890' };
+    } else {
+      return { success: false };
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
+
+    const paymentResult = await processPayment();
+    if (!paymentResult.success) return;
 
     const snapshotItems = cart.map(item => ({
       id: item.id,
@@ -108,10 +148,12 @@ function CheckoutPage({ cart, setCart }) {
         body: JSON.stringify({
           user_id: user.id,
           items: cart.map(item => ({
-            menu_item_id: item.menu_item_id,  // ✅ Fixed here
+            menu_item_id: item.menu_item_id,
             quantity: item.quantity || 1,
             price: item.price,
           })),
+          payment_method: formData.paymentMethod,
+          transaction_id: paymentResult.transactionId,
         }),
       });
 
@@ -237,6 +279,23 @@ function CheckoutPage({ cart, setCart }) {
                 </select>
                 {errors.paymentMethod && <span className="error" role="alert">{errors.paymentMethod}</span>}
               </div>
+
+              {formData.paymentMethod === 'MPesa' && (
+                <div className="form-group">
+                  <label htmlFor="phone">Phone Number (MPesa):</label>
+                  <input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    placeholder="2547XXXXXXXX"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    required
+                  />
+                  {errors.phone && <span className="error" role="alert">{errors.phone}</span>}
+                </div>
+              )}
+
               <button type="submit" className="submit-button">Place Order</button>
             </form>
           </LoadScript>
@@ -245,32 +304,6 @@ function CheckoutPage({ cart, setCart }) {
         <section className="order-confirmation" aria-live="polite">
           <h2>Thank you for your order!</h2>
           <p>Your order has been placed successfully and is being processed.</p>
-
-          <section className="receipt-details" style={{ marginTop: '1.5rem' }}>
-            <h3>Order Summary</h3>
-            <p><strong>Order ID:</strong> {orderSnapshot.orderId}</p>
-            <p><strong>Order Date:</strong> {orderSnapshot.date}</p>
-
-            <h4>Customer Details</h4>
-            <p>Name: {orderSnapshot.customer.name}</p>
-            <p>Email: {orderSnapshot.customer.email}</p>
-            <p>Address: {orderSnapshot.customer.address}</p>
-            <p>Payment Method: {orderSnapshot.customer.paymentMethod}</p>
-
-            <h4>Items Ordered:</h4>
-            <ul>
-              {orderSnapshot.items.map(item => (
-                <li key={item.id}>
-                  {item.name} x {item.quantity} @ ksh. {formatCurrency(item.price)} = ksh. {formatCurrency(item.subtotal)}
-                </li>
-              ))}
-            </ul>
-
-            <p><strong>Subtotal:</strong> ksh. {formatCurrency(orderSnapshot.subtotal)}</p>
-            <p><strong>VAT 16%:</strong> ksh. {formatCurrency(orderSnapshot.vat)}</p>
-            <p><strong>CTL 2%:</strong> ksh. {formatCurrency(orderSnapshot.ctl)}</p>
-            <p><strong>Total:</strong> ksh. {formatCurrency(orderSnapshot.total)}</p>
-          </section>
 
           <button onClick={downloadReceipt} style={{ marginRight: '1rem' }}>Download Receipt</button>
           <button onClick={() => navigate('/menu')}>Back to Menu</button>

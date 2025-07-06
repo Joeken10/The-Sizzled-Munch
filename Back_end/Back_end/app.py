@@ -1,3 +1,4 @@
+# ✅ Updated Flask App with New Daraja Credentials (Ready for Use)
 from flask import Flask, request, jsonify, session, current_app
 from flask_migrate import Migrate
 from flask_cors import CORS
@@ -10,6 +11,8 @@ from flask_mail import Mail, Message
 import random
 import string
 from datetime import datetime
+import requests
+import base64
 
 app = Flask(__name__)
 
@@ -102,6 +105,75 @@ def send_verification_email(email, ip_address):
     """
     mail.send(msg)
     return verification_code
+
+# ✅ MPesa STK Push Route (With Your Updated Daraja Sandbox Credentials)
+CONSUMER_KEY = 'OAFzWGUtq61Ggz96xmKQOfMxWi37GgohtxbM7cEaGIQfrp6e'
+CONSUMER_SECRET = 'T6G8tosn1vZ5X9XbqalczpGvG8UNfB0T3ryALXrXtSpKQL3AJ9uBFo5sGxdCkIp3'
+SHORTCODE = '174379'
+PASSKEY = 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919'
+
+def get_mpesa_access_token():
+    url = "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials"
+    try:
+        res = requests.get(url, auth=(CONSUMER_KEY, CONSUMER_SECRET))
+        res.raise_for_status()
+        token_data = res.json()
+        print("MPesa OAuth Token Retrieved Successfully:", token_data)
+        return token_data.get('access_token')
+    except Exception as e:
+        print("Failed to Get MPesa Access Token:", str(e))
+        return None
+
+@app.route('/pay_mpesa', methods=['POST'])
+def pay_mpesa():
+    data = request.get_json()
+    phone = data.get('phone_number')
+    amount = data.get('amount')
+
+    if not phone or not amount:
+        return jsonify({'error': 'Phone number and amount required'}), 400
+
+    access_token = get_mpesa_access_token()
+    if not access_token:
+        return jsonify({'error': 'Failed to retrieve MPesa access token'}), 500
+
+    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+    password = base64.b64encode(f"{SHORTCODE}{PASSKEY}{timestamp}".encode()).decode()
+
+    payload = {
+        "BusinessShortCode": SHORTCODE,
+        "Password": password,
+        "Timestamp": timestamp,
+        "TransactionType": "CustomerPayBillOnline",
+        "Amount": amount,
+        "PartyA": phone,
+        "PartyB": SHORTCODE,
+        "PhoneNumber": phone,
+        "CallBackURL": "https://myapp.com/mpesa/callback",
+        "AccountReference": "SizzledMunch",
+        "TransactionDesc": "Payment for Order"
+    }
+
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+
+    try:
+        res = requests.post(
+            "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
+            json=payload,
+            headers=headers
+        )
+        res.raise_for_status()
+        response_data = res.json()
+        print("MPesa STK Push Request Successful:", response_data)
+        return jsonify(response_data), 200
+    except requests.RequestException as e:
+        error_message = e.response.json() if e.response else str(e)
+        print("MPesa STK Push Request Failed:", error_message)
+        return jsonify({'error': 'MPesa STK Push failed', 'details': error_message}), 500
+
 
 
 
