@@ -135,3 +135,19 @@ class OrderItem(db.Model):
 
     def __repr__(self):
         return f"<OrderItem Order {self.order_id}, Item {self.menu_item_id}>"
+
+class MpesaPayment(db.Model):
+    __tablename__ = 'mpesa_payments'
+
+    id = db.Column(db.Integer, primary_key=True)
+    phone_number = db.Column(db.String(20), nullable=False)
+    amount = db.Column(db.Numeric(10, 2), nullable=False)
+    transaction_id = db.Column(db.String(100), nullable=True)  # e.g., CheckoutRequestID
+    status = db.Column(db.String(50), nullable=False, default='Pending')  # Pending, Success, Failed
+    response_data = db.Column(db.JSON, nullable=True)  # Full API response for reference
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    order_id = db.Column(db.Integer, db.ForeignKey('orders.id'), nullable=True)  # Optional, link to order if needed
+
+    def __repr__(self):
+        return f"<MpesaPayment {self.phone_number} - {self.amount}>"

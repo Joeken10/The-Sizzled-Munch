@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, session, current_app
 from flask_migrate import Migrate
 from flask_cors import CORS
 from sqlalchemy.exc import IntegrityError
-from models import db, User, AdminUser, MenuItem, CartItem, CartSummary, Order, OrderItem
+from models import db, User, AdminUser, MenuItem, CartItem, CartSummary, Order, OrderItem, MpesaPayment  # ✅ Added MpesaPayment
 from serializer import serialize_user, serialize_admin, serialize_menu_item, serialize_cart_item
 from itsdangerous import URLSafeTimedSerializer
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -168,7 +168,25 @@ def pay_mpesa():
             return jsonify({'error': 'MPesa API endpoint not found (404)', 'details': res.text}), 404
 
         res.raise_for_status()
-        return jsonify(res.json()), 200
+        response_data = res.json()
+
+        # ✅ Save Payment to DB
+        payment = MpesaPayment(
+            phone_number=phone,
+            amount=amount,
+            transaction_id=response_data.get('CheckoutRequestID'),
+            status='Pending',
+            response_data=response_data
+        )
+        db.session.add(payment)
+        db.session.commit()
+
+        return jsonify({
+            "message": "MPesa STK Push initiated",
+            "payment_id": payment.id,
+            "transaction_id": payment.transaction_id,
+            "response": response_data
+        }), 200
 
     except requests.RequestException as e:
         error_message = None
@@ -180,6 +198,52 @@ def pay_mpesa():
         else:
             error_message = str(e)
         return jsonify({'error': 'MPesa STK Push failed', 'details': error_message}), 502  # Bad Gateway (external API failure)
+    
+@app.route('/mpesa/callback', methods=['POST'])
+def mpesa_callback():
+    data = request.get_json()
+    stk_callback = data.get("Body", {}).get("stkCallback", {})
+    
+    merchant_request_id = stk_callback.get("MerchantRequestID")
+    checkout_request_id = stk_callback.get("CheckoutRequestID")
+    result_code = stk_callback.get("ResultCode")
+    result_desc = stk_callback.get("ResultDesc")
+    callback_metadata = stk_callback.get("CallbackMetadata", {})
+
+    payment = MpesaPayment.query.filter_by(transaction_id=checkout_request_id).first()
+
+    if not payment:
+        return jsonify({"error": "Payment not found"}), 404
+
+    if result_code == 0:
+        payment.status = "Success"
+    else:
+        payment.status = "Failed"
+
+    payment.response_data = stk_callback
+    db.session.commit()
+
+    return jsonify({"message": "Payment status updated"}), 200
+
+
+
+@app.route('/mpesa/payment_status/<int:payment_id>', methods=['GET'])
+def get_payment_status(payment_id):
+    payment = MpesaPayment.query.get(payment_id)
+    if not payment:
+        return jsonify({'error': 'Payment not found'}), 404
+
+    return jsonify({
+        'payment_id': payment.id,
+        'phone_number': payment.phone_number,
+        'amount': str(payment.amount),
+        'status': payment.status,
+        'created_at': payment.created_at,
+        'transaction_id': payment.transaction_id
+    }), 200
+
+
+
 
 
 

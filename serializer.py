@@ -41,3 +41,14 @@ def serialize_cart_item(cart_item):
         "price": float(getattr(menu_item, 'price', 0)),  # ✅ Safe cast to float
         "image_url": getattr(menu_item, 'image_url', None)
     }
+
+def serialize_mpesa_payment(payment):
+    return {
+        "id": payment.id,
+        "phone_number": payment.phone_number,
+        "amount": float(payment.amount),
+        "transaction_id": payment.transaction_id,
+        "status": payment.status,
+        "created_at": payment.created_at.isoformat(),
+        "response_data": payment.response_data
+    }
