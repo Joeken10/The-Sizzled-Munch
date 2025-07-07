@@ -7,50 +7,52 @@ from serializer import serialize_user, serialize_admin, serialize_menu_item, ser
 from itsdangerous import URLSafeTimedSerializer
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_mail import Mail, Message
+from datetime import datetime
 import random
 import string
-from datetime import datetime
 import requests
 import base64
+import os
+from dotenv import load_dotenv
+
+# ✅ Load .env in development
+load_dotenv()
 
 app = Flask(__name__)
 
-# ✅ Configurations
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://thesizzledmunch:munches@localhost:5432/sizzledmunch_db'
+# ✅ Configurations from Environment
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = 'supersecretkey'
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 
-# ✅ Email (Gmail SMTP)
+# ✅ Email Configs
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
 app.config['MAIL_USE_SSL'] = True
-app.config['MAIL_USERNAME'] = 'joekentafir@gmail.com'
-app.config['MAIL_PASSWORD'] = 'osxx vjts cnbf jepd'
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
 
 mail = Mail(app)
 
-# ✅ CORS
-CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://localhost:3000"}})
+# ✅ CORS (Allow All Origins for Now — you can tighten this later)
+CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
 
 # ✅ DB & Migrations
 db.init_app(app)
 migrate = Migrate(app, db)
 
-# ✅ Password Reset Token Generator
+# ✅ Password Reset Utilities
 def generate_reset_token(email):
     serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
     return serializer.dumps(email, salt='password-reset-salt')
 
-# ✅ Password Reset Token Verifier
 def verify_reset_token(token, expiration=3600):
     serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
     try:
-        email = serializer.loads(token, salt='password-reset-salt', max_age=expiration)
+        return serializer.loads(token, salt='password-reset-salt', max_age=expiration)
     except Exception:
         return None
-    return email
 
-# ✅ Send Password Reset Email
 def send_reset_email(recipient_email, reset_link):
     msg = Message(
         subject='Reset Your Password - The Sizzled Munch',
@@ -71,11 +73,9 @@ The Sizzled Munch Team
 """
     mail.send(msg)
 
-# ✅ Generate Email Verification Code
 def generate_verification_code(length=6):
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
-# ✅ Send Verification Email (with HTML & IP Address)
 def send_verification_email(email, ip_address):
     verification_code = generate_verification_code()
     msg = Message(
@@ -105,20 +105,18 @@ def send_verification_email(email, ip_address):
     mail.send(msg)
     return verification_code
 
-# ✅ MPesa STK Push Route (With Your Updated Daraja Sandbox Credentials)
-CONSUMER_KEY = 'OAFzWGUtq61Ggz96xmKQOfMxWi37GgohtxbM7cEaGIQfrp6e'
-CONSUMER_SECRET = 'T6G8tosn1vZ5X9XbqalczpGvG8UNfB0T3ryALXrXtSpKQL3AJ9uBFo5sGxdCkIp3'
-SHORTCODE = '174379'
-PASSKEY = 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919'
+# ✅ MPesa STK Push Route (Sandbox)
+CONSUMER_KEY = os.getenv('MPESA_CONSUMER_KEY')
+CONSUMER_SECRET = os.getenv('MPESA_CONSUMER_SECRET')
+SHORTCODE = os.getenv('MPESA_SHORTCODE')
+PASSKEY = os.getenv('MPESA_PASSKEY')
 
 def get_mpesa_access_token():
     url = "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials"
     try:
         res = requests.get(url, auth=(CONSUMER_KEY, CONSUMER_SECRET))
         res.raise_for_status()
-        token_data = res.json()
-        print("MPesa OAuth Token Retrieved Successfully:", token_data)
-        return token_data.get('access_token')
+        return res.json().get('access_token')
     except Exception as e:
         print("Failed to Get MPesa Access Token:", str(e))
         return None
@@ -148,7 +146,7 @@ def pay_mpesa():
         "PartyA": phone,
         "PartyB": SHORTCODE,
         "PhoneNumber": phone,
-        "CallBackURL": "https://myapp.com/mpesa/callback",
+        "CallBackURL": "https://the-sizzled-munch.onrender.com/mpesa/callback",
         "AccountReference": "SizzledMunch",
         "TransactionDesc": "Payment for Order"
     }
@@ -165,13 +163,18 @@ def pay_mpesa():
             headers=headers
         )
         res.raise_for_status()
-        response_data = res.json()
-        print("MPesa STK Push Request Successful:", response_data)
-        return jsonify(response_data), 200
+        return jsonify(res.json()), 200
     except requests.RequestException as e:
         error_message = e.response.json() if e.response else str(e)
-        print("MPesa STK Push Request Failed:", error_message)
         return jsonify({'error': 'MPesa STK Push failed', 'details': error_message}), 500
+
+# ✅ (Optional) MPesa Callback Route Example
+@app.route('/mpesa/callback', methods=['POST'])
+def mpesa_callback():
+    callback_data = request.get_json()
+    print("Received MPesa Callback:", callback_data)
+    # Save to DB or process payment status here
+    return jsonify({"status": "received"}), 200
 
 
 
