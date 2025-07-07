@@ -1,0 +1,131 @@
+.checkout-page {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.checkout-page h2 {
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+  color: #222;
+  text-align: center;
+}
+
+.checkout-summary {
+  background-color: #f9f9f9;
+  padding: 1.25rem;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+}
+
+.checkout-summary h3 {
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  color: #444;
+}
+
+.checkout-summary ul {
+  list-style-type: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.checkout-summary li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #ddd;
+  font-size: 1rem;
+}
+
+.checkout-summary li:last-child {
+  border-bottom: none;
+}
+
+.checkout-summary p {
+  font-weight: bold;
+  margin-top: 1rem;
+  font-size: 1.1rem;
+  color: #111;
+}
+
+.checkout-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.checkout-form label {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  display: block;
+  color: #333;
+}
+
+.checkout-form input,
+.checkout-form select {
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.checkout-form input:focus,
+.checkout-form select:focus {
+  border-color: #4caf50;
+  outline: none;
+}
+
+.checkout-form .error {
+  color: #d32f2f;
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
+}
+
+.checkout-form button {
+  padding: 0.75rem 1rem;
+  background-color: #4caf50;
+  color: white;
+  font-weight: bold;
+  font-size: 1rem;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.checkout-form button:hover {
+  background-color: #43a047;
+}
+
+.order-confirmation {
+  text-align: center;
+  padding: 2rem;
+}
+
+.order-confirmation h2 {
+  font-size: 2rem;
+  color: #2e7d32;
+  margin-bottom: 1rem;
+}
+
+.order-confirmation p {
+  font-size: 1.1rem;
+  color: #555;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .checkout-page {
+    padding: 1rem;
+  }
+
+  .checkout-form button {
+    width: 100%;
+  }
+}

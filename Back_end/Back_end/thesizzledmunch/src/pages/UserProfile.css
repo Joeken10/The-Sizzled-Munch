@@ -1,0 +1,162 @@
+@import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Playfair+Display:wght@700&display=swap');
+
+.user-profile-form {
+  max-width: 540px;
+  margin: 3rem auto;
+  background: linear-gradient(135deg, #2e1f12, #3e2a1b);
+  padding: 2.2rem;
+  border-radius: 20px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+  color: #faf3e0;
+  font-family: 'Lato', sans-serif;
+  text-align: center;
+  backdrop-filter: blur(6px);
+}
+
+.user-profile-form h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.4rem;
+  margin-bottom: 1.8rem;
+  color: #e0b878;
+}
+
+.success-message {
+  background: linear-gradient(90deg, #69b07c, #85c99f);
+  color: #fff;
+  padding: 0.9rem;
+  border-radius: 10px;
+  margin-bottom: 1.8rem;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+}
+
+.profile-image {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  border: 3px solid #e0b878;
+  object-fit: cover;
+  margin-bottom: 1.8rem;
+  transition: transform 0.4s ease, border-color 0.4s ease;
+}
+
+.profile-image:hover {
+  transform: scale(1.08);
+  border-color: #c9884d;
+}
+
+.user-profile-form form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.user-profile-form label {
+  text-align: left;
+  font-weight: 700;
+  color: #f5e7d0;
+}
+
+.user-profile-form input {
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  border: 1.8px solid #e0b878;
+  background-color: #faf3e0;
+  color: #2e1f12;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.4s ease, box-shadow 0.4s ease;
+}
+
+.user-profile-form input:focus {
+  border-color: #c9884d;
+  box-shadow: 0 0 10px #c9884d80;
+}
+
+.profile-details {
+  background: rgba(250, 243, 224, 0.05);
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid #e0b87888;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.15);
+  margin-top: 1.5rem;
+  text-align: left;
+}
+
+.profile-details p {
+  margin-bottom: 1.2rem;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  font-family: 'Lato', sans-serif;
+  color: #f5e7d0;
+}
+
+.profile-details p span {
+  display: inline-block;
+  font-weight: 700;
+  color: #e0b878;
+  width: 140px;
+}
+
+.button-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 2rem;
+  justify-content: center;
+}
+
+.button-group button {
+  background: linear-gradient(90deg, #e0b878, #c9884d);
+  border: none;
+  border-radius: 12px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #2e1f12;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.2s ease, color 0.2s ease;
+}
+
+.button-group button:hover {
+  background: linear-gradient(90deg, #c9884d, #a96c3c);
+  transform: translateY(-3px);
+}
+
+.delete-button {
+  background: linear-gradient(90deg, #cc4b4b, #b83434);
+  color: #fff;
+}
+
+.delete-button:hover {
+  background: linear-gradient(90deg, #b83434, #9f2929);
+}
+
+.logout-button {
+  background: linear-gradient(90deg, #e0b878, #c9884d);
+  border: none;
+  border-radius: 12px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #2e1f12;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.2s ease, color 0.2s ease;
+}
+
+.logout-button:hover {
+  background: linear-gradient(90deg, #cc4b4b, #b83434);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 0 10px #cc4b4b99;
+}
+
+@media (max-width: 540px) {
+  .user-profile-form {
+    padding: 1.5rem;
+  }
+
+  .button-group {
+    flex-direction: column;
+  }
+}

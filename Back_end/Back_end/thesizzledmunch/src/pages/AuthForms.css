@@ -1,0 +1,160 @@
+/* AuthForms.css */
+
+.signin-container,
+.signup-container {
+  max-width: 400px;
+  margin: 50px auto;
+  padding: 35px 30px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.signin-container h2,
+.signup-container h2 {
+  text-align: center;
+  margin-bottom: 25px;
+  color: #222;
+  font-size: 1.8rem;
+  font-weight: 600;
+}
+
+.signin-container form,
+.signup-container form {
+  display: flex;
+  flex-direction: column;
+}
+
+.signin-container input,
+.signup-container input {
+  padding: 12px 14px;
+  margin-bottom: 18px;
+  border-radius: 8px;
+  border: 1.5px solid #ddd;
+  font-size: 1rem;
+  outline: none;
+  transition: all 0.25s ease;
+  background-color: #fafafa;
+}
+
+.signin-container input:focus,
+.signup-container input:focus {
+  border-color: #f97316;
+  background-color: #fff;
+  box-shadow: 0 0 8px rgba(249, 115, 22, 0.3);
+}
+
+.password-field {
+  position: relative;
+}
+
+.password-field input {
+  width: 100%;
+  padding-right: 44px;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.2rem;
+  color: #888;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.toggle-password:hover {
+  color: #555;
+}
+
+small {
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.signin-container button,
+.signup-container button {
+  padding: 12px;
+  background-color: #f97316;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-weight: 600;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.signin-container button:hover,
+.signup-container button:hover {
+  background-color: #e1620c;
+  transform: translateY(-1px);
+}
+
+.signin-container p,
+.signup-container p {
+  text-align: center;
+  margin-top: 18px;
+  font-size: 0.95rem;
+  color: #555;
+}
+
+.signin-container p a,
+.signup-container p a {
+  color: #f97316;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.signin-container p a:hover,
+.signup-container p a:hover {
+  text-decoration: underline;
+}
+
+.or-divider {
+  margin: 24px 0;
+  text-align: center;
+  font-weight: 600;
+  color: #999;
+  position: relative;
+}
+
+.or-divider::before,
+.or-divider::after {
+  content: '';
+  height: 1px;
+  width: 40%;
+  background: #ddd;
+  position: absolute;
+  top: 50%;
+}
+
+.or-divider::before {
+  left: 0;
+}
+
+.or-divider::after {
+  right: 0;
+}
+
+.google-button {
+  width: 100%;
+  padding: 12px;
+  background-color: #4285F4;
+  color: white;
+  border: none;
+  cursor: pointer;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.google-button:hover {
+  background-color: #3367d6;
+  transform: translateY(-1px);
+}
