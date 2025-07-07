@@ -108,8 +108,9 @@ def send_verification_email(email, ip_address):
 # ✅ MPesa STK Push Route (Sandbox)
 CONSUMER_KEY = os.getenv('MPESA_CONSUMER_KEY')
 CONSUMER_SECRET = os.getenv('MPESA_CONSUMER_SECRET')
-SHORTCODE = os.getenv('MPESA_SHORTCODE')
+SHORTCODE = str(os.getenv('MPESA_SHORTCODE'))
 PASSKEY = os.getenv('MPESA_PASSKEY')
+CALLBACK_URL = os.getenv('MPESA_CALLBACK_URL', 'https://the-sizzled-munch.onrender.com/mpesa/callback')
 
 def get_mpesa_access_token():
     url = "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials"
@@ -146,7 +147,7 @@ def pay_mpesa():
         "PartyA": phone,
         "PartyB": SHORTCODE,
         "PhoneNumber": phone,
-        "CallBackURL": "https://the-sizzled-munch.onrender.com/mpesa/callback",
+        "CallBackURL": CALLBACK_URL,
         "AccountReference": "SizzledMunch",
         "TransactionDesc": "Payment for Order"
     }
@@ -162,20 +163,23 @@ def pay_mpesa():
             json=payload,
             headers=headers
         )
+
+        if res.status_code == 404:
+            return jsonify({'error': 'MPesa API endpoint not found (404)', 'details': res.text}), 404
+
         res.raise_for_status()
         return jsonify(res.json()), 200
+
     except requests.RequestException as e:
-        error_message = e.response.json() if e.response else str(e)
-        return jsonify({'error': 'MPesa STK Push failed', 'details': error_message}), 500
-
-# ✅ (Optional) MPesa Callback Route Example
-@app.route('/mpesa/callback', methods=['POST'])
-def mpesa_callback():
-    callback_data = request.get_json()
-    print("Received MPesa Callback:", callback_data)
-    # Save to DB or process payment status here
-    return jsonify({"status": "received"}), 200
-
+        error_message = None
+        if e.response is not None:
+            try:
+                error_message = e.response.json()
+            except Exception:
+                error_message = e.response.text
+        else:
+            error_message = str(e)
+        return jsonify({'error': 'MPesa STK Push failed', 'details': error_message}), 502  # Bad Gateway (external API failure)
 
 
 
