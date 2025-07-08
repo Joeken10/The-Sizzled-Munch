@@ -4,13 +4,21 @@ import './LandingPage.css';
 function LandingPage() {
   return (
     <div className="landing-page">
-      <header className="hero">
+      <header
+        className="hero"
+        style={{
+          backgroundImage: `linear-gradient(
+            rgba(59, 46, 15, 0.8),
+            rgba(59, 46, 15, 0.8)
+          ), url('/landing_page_images/2photo.jpeg')`,
+        }}
+      >
         <div className="hero-content">
-          <h1 className="title animate-fade-in">The Sizzled Munch</h1>
-          <p className="subtitle animate-slide-up">
+          <h1 className="title">The Sizzled Munch</h1>
+          <p className="subtitle">
             Where classic flavors meet timeless elegance.
           </p>
-          <a href="/menu" className="btn-primary btn-glow" aria-label="View our menu">
+          <a href="/menu" className="btn-primary" aria-label="View our menu">
             View Our Menu
           </a>
         </div>

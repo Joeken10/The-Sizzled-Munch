@@ -1,3 +1,4 @@
+/* LandingPage.css (Updated - No background image in CSS) */
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Merriweather:wght@300;400&display=swap');
 
 body, html {
@@ -20,11 +21,6 @@ body, html {
 
 /* HERO SECTION */
 .hero {
-  background: linear-gradient(
-      rgba(59, 46, 15, 0.8),
-      rgba(59, 46, 15, 0.8)
-    ),
-    url('/home/joeken/Desktop/The-Rat/Folder-1/The-Sizzled-Munch/thesizzledmunch/public/landing page images/1photo.jpeg') center center / cover no-repeat;
   min-height: 90vh;
   display: flex;
   justify-content: center;
@@ -33,6 +29,7 @@ body, html {
   padding: 0 2rem;
   transition: background-color 0.5s ease, background-size 0.4s ease;
   background-size: cover;
+  background-position: center;
 }
 
 .hero:hover {
@@ -79,7 +76,7 @@ body, html {
 }
 
 .subtitle:hover {
-  color: #fff;
+  color: #ffffff;
 }
 
 /* BUTTON */
@@ -95,17 +92,15 @@ body, html {
   box-shadow: 0 6px 20px rgba(185, 148, 69, 0.85);
   cursor: pointer;
   text-decoration: none;
-  transition: 
-    background 0.4s ease, 
-    box-shadow 0.4s ease,
-    transform 0.25s ease;
+  transition: background 0.4s ease, box-shadow 0.4s ease, transform 0.25s ease;
   display: inline-block;
   user-select: none;
   letter-spacing: 0.05em;
 }
 
 .btn-primary:hover,
-.btn-primary:focus {
+.btn-primary:focus,
+.btn-primary:focus-visible {
   background: linear-gradient(135deg, #d9b382, #b9975b);
   box-shadow: 0 9px 28px rgba(185, 148, 69, 1);
   outline: none;
@@ -147,7 +142,7 @@ body, html {
   color: #8b7d4a;
 }
 
-/* Responsive */
+/* Responsive Styles */
 @media (max-width: 720px) {
   .title {
     font-size: 3rem;
