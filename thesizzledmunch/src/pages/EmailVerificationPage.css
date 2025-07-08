@@ -1,0 +1,46 @@
+.verification-container {
+  max-width: 400px;
+  margin: 40px auto;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-family: Arial, sans-serif;
+}
+
+.verification-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.verification-input {
+  padding: 10px;
+  font-size: 16px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+
+.verification-button {
+  padding: 12px;
+  background-color: #007bff;
+  color: #fff;
+  font-weight: bold;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.verification-button:hover {
+  background-color: #0056b3;
+}
+
+.verification-success {
+  color: green;
+  margin-top: 15px;
+}
+
+.verification-error {
+  color: red;
+  margin-top: 15px;
+}

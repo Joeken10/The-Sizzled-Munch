@@ -1,7 +1,19 @@
+@keyframes slideUpScale {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 .orders-container {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 2rem auto;
   padding: 1.5rem;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .orders-container h2 {
@@ -13,33 +25,36 @@
 
 .orders-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 1.5rem;
 }
 
 .order-card {
   background-color: #ffffff;
-  border-radius: 12px;
-  padding: 1.25rem 1.5rem;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
   border-top: 5px solid #ff5722;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  animation: slideUpScale 0.5s ease both;
 }
 
 .order-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+  transform: translateY(-6px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
 }
 
 .order-card h3 {
   margin-bottom: 0.75rem;
   color: #e64a19;
+  font-size: 1.25rem;
 }
 
 .order-card p {
-  margin: 0.5rem 0;
+  margin: 0.4rem 0;
   font-size: 0.95rem;
-  color: #555;
+  color: #444;
+  line-height: 1.4;
 }
 
 .order-card ul {
@@ -48,7 +63,7 @@
 }
 
 .order-card li {
-  padding: 0.35rem 0;
+  padding: 0.4rem 0;
   border-bottom: 1px dashed #ccc;
   font-size: 0.9rem;
 }
@@ -57,68 +72,53 @@
   border-bottom: none;
 }
 
-@media (max-width: 600px) {
-  .orders-container {
-    padding: 1rem;
-  }
-}
-.orders-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 1.5rem;
-}
-
-.order-card {
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 1rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+.advance-btn,
+.confirm-btn,
+.clear-history-btn {
+  display: inline-block;
+  margin-top: 1rem;
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  color: white;
+  font-size: 0.95rem;
+  transition: background 0.3s ease, transform 0.2s ease;
 }
 
 .advance-btn {
-  margin-top: 1rem;
-  padding: 0.5rem 1rem;
   background-color: #4caf50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: background 0.3s ease;
 }
 
 .advance-btn:hover {
   background-color: #45a049;
+  transform: translateY(-2px);
 }
+
 .confirm-btn {
-  background-color: #4caf50;
-  border: none;
-  color: white;
-  padding: 0.5rem 1rem;
-  margin-top: 0.5rem;
-  border-radius: 5px;
-  cursor: pointer;
-  font-weight: bold;
+  background-color: #ff9800;
 }
 
 .confirm-btn:hover {
-  background-color: #388e3c;
+  background-color: #fb8c00;
+  transform: translateY(-2px);
 }
 
 .clear-history-btn {
   background-color: #f44336;
-  border: none;
-  color: white;
-  padding: 0.5rem 1rem;
-  margin-bottom: 1rem;
-  border-radius: 5px;
-  cursor: pointer;
-  font-weight: bold;
+  padding: 0.6rem 1.4rem;
 }
 
 .clear-history-btn:hover {
-  background-color: #d32f2f;
+  background-color: #e53935;
+  transform: translateY(-2px);
+}
+
+.info {
+  font-weight: bold;
+  color: #4caf50;
+  margin-top: 1rem;
 }
 
 .order-card.history {
@@ -131,4 +131,66 @@
   color: #4caf50;
   font-weight: bold;
   margin-top: 1rem;
+}
+
+.status-progress {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1.5rem;
+  border-top: 2px solid #ddd;
+  padding-top: 1rem;
+}
+
+.stage {
+  flex: 1;
+  text-align: center;
+  padding: 0.5rem 0;
+  border-bottom: 4px solid #ccc;
+  color: #999;
+  font-size: 0.9rem;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.stage.pending.completed {
+  border-color: #ff9800;
+  color: #ff9800;
+}
+
+.stage.preparing.completed {
+  border-color: #03a9f4;
+  color: #03a9f4;
+}
+
+.stage.ready.completed {
+  border-color: #4caf50;
+  color: #4caf50;
+}
+
+.stage.completed.completed {
+  border-color: #9c27b0;
+  color: #9c27b0;
+}
+
+@media (max-width: 992px) {
+  .orders-grid {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .orders-container {
+    padding: 1rem;
+  }
+
+  .orders-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .advance-btn,
+  .confirm-btn,
+  .clear-history-btn {
+    width: 100%;
+    text-align: center;
+  }
 }

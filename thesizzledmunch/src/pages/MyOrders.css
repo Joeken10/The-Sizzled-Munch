@@ -1,89 +1,61 @@
 .orders-container {
-  max-width: 800px;
+  max-width: 1000px;
   margin: 2rem auto;
-  padding: 1rem;
+  padding: 1.5rem;
   background-color: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.07);
 }
 
 .orders-container h2 {
   text-align: center;
   color: #ff7043;
-  margin-bottom: 1.5rem;
-  font-size: 1.8rem;
+  margin-bottom: 2rem;
+  font-size: 2rem;
 }
 
 .order-card {
-  border-left: 4px solid #ff7043;
   background-color: #fafafa;
-  padding: 1rem 1.5rem;
-  margin-bottom: 1.5rem;
-  border-radius: 8px;
-  transition: box-shadow 0.3s ease;
+  border-left: 6px solid #ff7043;
+  border-radius: 12px;
+  padding: 1.5rem 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.3s ease, transform 0.2s ease;
 }
 
 .order-card:hover {
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  transform: translateY(-3px);
 }
 
 .order-card h3 {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
   color: #d84315;
-  font-size: 1.2rem;
+  font-size: 1.4rem;
 }
 
 .order-card p {
-  margin: 0.4rem 0;
-  font-size: 0.95rem;
+  margin: 0.5rem 0;
+  font-size: 1rem;
   color: #555;
 }
 
 .order-card ul {
-  margin-top: 0.75rem;
-  padding-left: 1.2rem;
+  margin-top: 1rem;
+  padding-left: 1.5rem;
 }
 
 .order-card li {
-  padding: 0.3rem 0;
+  padding: 0.4rem 0;
   border-bottom: 1px dashed #ccc;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
 }
 
 .order-card li:last-child {
   border-bottom: none;
 }
 
-.error {
-  color: red;
-  text-align: center;
-  font-weight: bold;
-  margin: 1rem 0;
-}
-
-@media (max-width: 600px) {
-  .orders-container {
-    padding: 1rem 0.75rem;
-  }
-
-  .order-card {
-    padding: 1rem;
-  }
-}
-.orders-container {
-  max-width: 800px;
-  margin: 2rem auto;
-  padding: 1rem;
-}
-
-.order-card {
-  background: #fff;
-  border: 1px solid #eee;
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
 
 .status-progress {
   display: flex;
@@ -101,20 +73,37 @@
   color: #999;
   font-size: 0.9rem;
   transition: all 0.3s ease;
+  font-weight: 500;
 }
 
-.stage.completed {
+.stage.completed:nth-child(1) {
+  border-color: #ff9800;
+  color: #ff9800;
+}
+
+.stage.completed:nth-child(2) {
+  border-color: #2196f3;
+  color: #2196f3;
+}
+
+.stage.completed:nth-child(3) {
   border-color: #4caf50;
   color: #4caf50;
-  font-weight: bold;
 }
+
+.stage.completed:nth-child(4) {
+  border-color: #673ab7;
+  color: #673ab7;
+}
+
+/* Buttons */
 .confirm-btn {
   margin-top: 1rem;
-  padding: 0.5rem 1rem;
+  padding: 0.6rem 1.2rem;
   background-color: #2196f3;
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   font-weight: bold;
   transition: background 0.3s ease;
@@ -122,40 +111,6 @@
 
 .confirm-btn:hover {
   background-color: #1976d2;
-}
-.order-card.history {
-  background: #f9f9f9;
-  border-color: #ccc;
-  opacity: 0.8;
-}
-
-.history-note {
-  font-style: italic;
-  color: #666;
-}
-.order-card.history {
-  opacity: 0.8;
-  background-color: #f9f9f9;
-  border: 1px dashed #ccc;
-}
-.history-note {
-  color: #4caf50;
-  font-weight: bold;
-  margin-top: 1rem;
-}
-.clear-history-btn {
-  background-color: #f44336;
-  border: none;
-  color: white;
-  padding: 0.5rem 1rem;
-  margin-bottom: 1rem;
-  border-radius: 5px;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-.clear-history-btn:hover {
-  background-color: #d32f2f;
 }
 
 .order-card.history {
@@ -169,12 +124,56 @@
   font-weight: bold;
   margin-top: 1rem;
 }
+
 .warning-banner {
   background-color: #fff3cd;
   color: #856404;
-  padding: 12px;
+  padding: 1rem;
   border: 1px solid #ffeeba;
   border-radius: 8px;
-  margin-bottom: 20px;
+  margin-bottom: 1.5rem;
   font-weight: 500;
+}
+
+.error {
+  color: red;
+  text-align: center;
+  font-weight: bold;
+  margin: 1rem 0;
+}
+
+
+@media (max-width: 768px) {
+  .orders-container {
+    padding: 1rem;
+  }
+
+  .order-card {
+    padding: 1rem;
+  }
+
+  .orders-container h2 {
+    font-size: 1.5rem;
+  }
+
+  .order-card h3 {
+    font-size: 1.2rem;
+  }
+
+  .confirm-btn {
+    width: 100%;
+    padding: 0.8rem;
+  }
+
+  .status-progress {
+    flex-direction: column;
+    align-items: center;
+    border: none;
+  }
+
+  .stage {
+    width: 100%;
+    border-bottom-width: 2px;
+    padding: 0.75rem 0;
+  }
 }

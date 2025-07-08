@@ -17,6 +17,7 @@ function UserProfile({ userId }) {
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
   const [message, setMessage] = useState('');
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     fetch(`http://localhost:8000/user/${userId}/profile`)
@@ -62,24 +63,26 @@ function UserProfile({ userId }) {
       .catch((err) => console.error('Failed to update profile:', err));
   };
 
-  const handleDelete = () => {
-    if (window.confirm('Are you sure you want to delete your profile? This cannot be undone.')) {
-      fetch(`http://localhost:8000/user/${userId}/profile`, {
+  const confirmDelete = async (password) => {
+    try {
+      const res = await fetch(`http://localhost:8000/user/${userId}/self_delete`, {
         method: 'DELETE',
-      })
-        .then(() => {
-          setMessage('Profile deleted.');
-          setProfile({
-            username: '',
-            email: '',
-            delivery_address: '',
-            phone_number: '',
-            profile_image: ''
-          });
-          setUser(null);
-          navigate('/');
-        })
-        .catch((err) => console.error('Failed to delete profile:', err));
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+
+      if (res.ok) {
+        setMessage('Account deleted successfully.');
+        setUser(null);
+        navigate('/');
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Failed to delete account.');
+      }
+    } catch (err) {
+      console.error('Failed to delete account:', err);
+    } finally {
+      setShowModal(false);
     }
   };
 
@@ -159,11 +162,50 @@ function UserProfile({ userId }) {
           <p><strong>Phone Number:</strong> {profile.phone_number}</p>
           <div className="button-group">
             <button onClick={() => setEditMode(true)}>Edit Profile</button>
-            <button className="delete-button" onClick={handleDelete}>Delete Profile</button>
+            <button className="delete-button" onClick={() => setShowModal(true)}>Delete Profile</button>
             <button onClick={handleLogout}>Logout</button>
           </div>
         </div>
       )}
+
+      
+      {showModal && (
+        <PasswordConfirmModal
+          onConfirm={confirmDelete}
+          onCancel={() => setShowModal(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+function PasswordConfirmModal({ onConfirm, onCancel }) {
+  const [password, setPassword] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onConfirm(password);
+  };
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <h2>Confirm Account Deletion</h2>
+        <p>Please enter your password to confirm deletion:</p>
+        <form onSubmit={handleSubmit}>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Password"
+            required
+          />
+          <div className="modal-buttons">
+            <button type="submit" className="confirm-button">Confirm Delete</button>
+            <button type="button" className="cancel-button" onClick={onCancel}>Cancel</button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
