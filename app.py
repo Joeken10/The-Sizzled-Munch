@@ -1,47 +1,48 @@
 from flask import Flask, request, jsonify, session, current_app
 from flask_migrate import Migrate
 from flask_cors import CORS
-from sqlalchemy.exc import IntegrityError
-from models import db, User, AdminUser, MenuItem, CartItem, CartSummary, Order, OrderItem, MpesaPayment  # ✅ Added MpesaPayment
-from serializer import serialize_user, serialize_admin, serialize_menu_item, serialize_cart_item
+from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_mail import Mail, Message
-from datetime import datetime
+from datetime import datetime, timedelta
+from sqlalchemy.exc import IntegrityError
+from dotenv import load_dotenv
+import os
 import random
 import string
 import requests
 import base64
-import os
-from dotenv import load_dotenv
 
-# ✅ Load .env in development
+from models import db, User, AdminUser, MenuItem, CartItem, CartSummary, Order, OrderItem, MpesaPayment
+from serializer import serialize_user, serialize_admin, serialize_menu_item, serialize_cart_item
+
+
 load_dotenv()
 
 app = Flask(__name__)
 
-# ✅ Configurations from Environment
+
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 
-# ✅ Email Configs
+
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
 app.config['MAIL_USE_SSL'] = True
 app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
 
+
 mail = Mail(app)
-
-# ✅ CORS (Allow All Origins for Now — you can tighten this later)
-CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
-
-# ✅ DB & Migrations
 db.init_app(app)
 migrate = Migrate(app, db)
+CORS(app, supports_credentials=True)
 
-# ✅ Password Reset Utilities
+
+
 def generate_reset_token(email):
     serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
     return serializer.dumps(email, salt='password-reset-salt')
@@ -105,7 +106,6 @@ def send_verification_email(email, ip_address):
     mail.send(msg)
     return verification_code
 
-# ✅ MPesa STK Push Route (Sandbox)
 CONSUMER_KEY = os.getenv('MPESA_CONSUMER_KEY')
 CONSUMER_SECRET = os.getenv('MPESA_CONSUMER_SECRET')
 SHORTCODE = str(os.getenv('MPESA_SHORTCODE'))
@@ -170,7 +170,6 @@ def pay_mpesa():
         res.raise_for_status()
         response_data = res.json()
 
-        # ✅ Save Payment to DB
         payment = MpesaPayment(
             phone_number=phone,
             amount=amount,
@@ -180,6 +179,23 @@ def pay_mpesa():
         )
         db.session.add(payment)
         db.session.commit()
+
+       
+        if app.debug or os.getenv("FLASK_ENV") == "development":
+            fake_callback = {
+                "Body": {
+                    "stkCallback": {
+                        "MerchantRequestID": "abc123",
+                        "CheckoutRequestID": response_data.get('CheckoutRequestID'),
+                        "ResultCode": 0,
+                        "ResultDesc": "The service request is processed successfully."
+                    }
+                }
+            }
+            try:
+                requests.post('http://localhost:8000/mpesa/callback', json=fake_callback)
+            except Exception as e:
+                print("Failed to simulate callback:", str(e))
 
         return jsonify({
             "message": "MPesa STK Push initiated",
@@ -197,39 +213,36 @@ def pay_mpesa():
                 error_message = e.response.text
         else:
             error_message = str(e)
-        return jsonify({'error': 'MPesa STK Push failed', 'details': error_message}), 502  # Bad Gateway (external API failure)
-    
+        return jsonify({'error': 'MPesa STK Push failed', 'details': error_message}), 502
+
+
 @app.route('/mpesa/callback', methods=['POST'])
 def mpesa_callback():
     data = request.get_json()
-    stk_callback = data.get("Body", {}).get("stkCallback", {})
-    
-    merchant_request_id = stk_callback.get("MerchantRequestID")
-    checkout_request_id = stk_callback.get("CheckoutRequestID")
-    result_code = stk_callback.get("ResultCode")
-    result_desc = stk_callback.get("ResultDesc")
-    callback_metadata = stk_callback.get("CallbackMetadata", {})
+    print("Received MPesa Callback:", data)
 
-    payment = MpesaPayment.query.filter_by(transaction_id=checkout_request_id).first()
+    try:
+        callback = data['Body']['stkCallback']
+        checkout_id = callback['CheckoutRequestID']
+        result_code = callback['ResultCode']
+        result_desc = callback['ResultDesc']
 
-    if not payment:
-        return jsonify({"error": "Payment not found"}), 404
+        payment = MpesaPayment.query.filter_by(transaction_id=checkout_id).first()
+        if payment:
+            payment.status = 'Success' if result_code == 0 else 'Failed'
+            payment.response_data = data
+            db.session.commit()
+            return jsonify({'message': 'Payment updated'}), 200
+        else:
+            return jsonify({'error': 'Payment not found'}), 404
 
-    if result_code == 0:
-        payment.status = "Success"
-    else:
-        payment.status = "Failed"
+    except Exception as e:
+        print("Callback error:", str(e))
+        return jsonify({'error': 'Invalid callback format'}), 400
 
-    payment.response_data = stk_callback
-    db.session.commit()
-
-    return jsonify({"message": "Payment status updated"}), 200
-
-
-
-@app.route('/mpesa/payment_status/<int:payment_id>', methods=['GET'])
-def get_payment_status(payment_id):
-    payment = MpesaPayment.query.get(payment_id)
+@app.route('/mpesa/payment_status_by_txn/<transaction_id>', methods=['GET'])
+def get_payment_status_by_txn(transaction_id):
+    payment = MpesaPayment.query.filter_by(transaction_id=transaction_id.strip()).first()
     if not payment:
         return jsonify({'error': 'Payment not found'}), 404
 
@@ -238,11 +251,9 @@ def get_payment_status(payment_id):
         'phone_number': payment.phone_number,
         'amount': str(payment.amount),
         'status': payment.status,
-        'created_at': payment.created_at,
+        'created_at': payment.created_at.isoformat(),
         'transaction_id': payment.transaction_id
     }), 200
-
-
 
 
 
@@ -273,7 +284,6 @@ def signup():
     if User.query.filter_by(email=email).first():
         return jsonify({'error': 'Email already exists'}), 409
 
-    # ✅ Generate Verification Code
     verification_code = generate_verification_code()
 
     user = User(
@@ -286,7 +296,6 @@ def signup():
     db.session.add(user)
     db.session.commit()
 
-    # ✅ Send Verification Email
     msg = Message(
         subject="Verify Your Sizzled Munch Email",
         sender=app.config['MAIL_USERNAME'],
@@ -314,7 +323,6 @@ Sizzled Munch, 00100, Nairobi, Kaunda Street.
     return jsonify({'message': 'User registered. Verification email sent.'}), 201
 
 
-
 @app.route('/signin', methods=['POST'])
 def signin():
     data = request.get_json()
@@ -327,26 +335,50 @@ def signin():
     if admin and admin.check_password(password):
         session['user_id'] = admin.id
         session['is_admin'] = True
+        admin.is_online = True  
+        admin.last_login_at = datetime.utcnow()  
+        db.session.commit()
         return jsonify(serialize_admin(admin))
 
-    
     user = User.query.filter(
         (User.username == username) | (User.email == username)
     ).first()
     if user and user.check_password(password):
         session['user_id'] = user.id
         session['is_admin'] = False
+        user.is_online = True
+        user.last_login_at = datetime.utcnow()
+        db.session.commit()
         return jsonify(serialize_user(user))
 
     return jsonify({"error": "Invalid username/email or password"}), 401
 
-    
-
-
 @app.route('/logout', methods=['POST'])
 def logout():
+    user_id = session.get('user_id')
+
+    
+    if not user_id:
+        session.clear()
+        return jsonify({"message": "Logged out successfully"}), 200
+
+    if session.get('is_admin'):
+        admin = db.session.get(AdminUser, user_id)
+        if admin:
+            admin.is_online = False
+            db.session.commit()
+    else:
+        user = db.session.get(User, user_id)
+        if user:
+            user.is_online = False
+            user.force_logout = False 
+            db.session.commit()
+
     session.clear()
     return jsonify({"message": "Logged out successfully"}), 200
+
+
+
 
 
 @app.route('/users/check', methods=['GET'])
@@ -366,19 +398,24 @@ def check_user_exists():
 
     return jsonify({"exists": bool(exists)}), 200
 
+@app.route('/admin/users', methods=['GET'])
+def admin_get_users():
+    admin_id = request.args.get('admin_id', type=int)
+    if not admin_id or not is_admin(admin_id):
+        return jsonify({"error": "Unauthorized - Admin only"}), 403
 
-@app.route('/users', methods=['GET'])
-def get_users():
     users = User.query.all()
     return jsonify([serialize_user(user) for user in users]), 200
 
 
+
 @app.route('/users/<int:user_id>', methods=['GET'])
 def get_user(user_id):
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)  
     if not user:
         return jsonify({"error": "User not found"}), 404
     return jsonify(serialize_user(user)), 200
+
 
 
 @app.route('/users/<int:user_id>', methods=['PUT'])
@@ -411,15 +448,112 @@ def update_user(user_id):
     return jsonify(serialize_user(user)), 200
 
 
-@app.route('/users/<int:user_id>', methods=['DELETE'])
-def delete_user(user_id):
+@app.route('/user/<int:user_id>/self_delete', methods=['DELETE', 'OPTIONS'])
+def user_self_delete(user_id):
+    if request.method == 'OPTIONS':
+        return jsonify({"message": "CORS preflight OK"}), 200
+
     user = User.query.get(user_id)
     if not user:
         return jsonify({"error": "User not found"}), 404
 
+    data = request.get_json()
+    password = data.get('password')
+    if not password or not check_password_hash(user.password_hash, password):
+        return jsonify({"error": "Incorrect password"}), 403
+
     db.session.delete(user)
     db.session.commit()
-    return jsonify({"message": f"User '{user.username}' deleted"}), 200
+    return jsonify({"message": "Account deleted successfully"}), 200
+
+
+@app.route('/admin/users/<int:user_id>', methods=['PATCH', 'OPTIONS'])
+def admin_update_user(user_id):
+    if request.method == 'OPTIONS':
+        return jsonify({"message": "CORS preflight OK"}), 200
+
+    data = request.get_json()
+    admin_id = data.get('admin_id')
+    if not admin_id or not is_admin(admin_id):
+        return jsonify({"error": "Unauthorized - Admin only"}), 403
+
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    # Update fields
+    if 'username' in data and data['username']:
+        user.username = data['username']
+    if 'profile_image' in data and data['profile_image']:
+        user.profile_image = data['profile_image']
+    if 'password' in data and data['password']:
+        from werkzeug.security import generate_password_hash
+        user.password_hash = generate_password_hash(data['password'])
+
+    db.session.commit()
+    return jsonify({"message": "User updated successfully"}), 200
+
+
+
+
+@app.route('/admin/users/<int:user_id>/promote', methods=['PATCH'])
+def admin_promote_user(user_id):
+    data = request.get_json()
+    admin_id = data.get('admin_id')
+
+    if not admin_id or not is_admin(admin_id):
+        return jsonify({"error": "Unauthorized - Admin only"}), 403
+
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    if user.is_admin:
+        return jsonify({"message": f"User '{user.username}' is already an admin"}), 200
+
+    user.is_admin = True
+    user.force_logout = True  
+    db.session.commit()
+
+    return jsonify({"message": f"User '{user.username}' promoted to admin"}), 200
+
+
+@app.route('/admin/users/<int:user_id>/demote', methods=['PATCH'])
+def admin_demote_user(user_id):
+    data = request.get_json()
+    admin_id = data.get('admin_id')
+
+    if not admin_id or not is_admin(admin_id):
+        return jsonify({"error": "Unauthorized - Admin only"}), 403
+
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    if not user.is_admin:
+        return jsonify({"message": f"User '{user.username}' is not an admin"}), 200
+
+    user.is_admin = False
+    user.force_logout = True
+    db.session.commit()
+
+    return jsonify({"message": f"User '{user.username}' demoted from admin"}), 200
+
+
+
+@app.route('/users/<int:user_id>/check-admin', methods=['GET'])
+def check_admin(user_id):
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    
+    return jsonify({
+        'is_admin': user.is_admin,
+        'force_logout': user.force_logout  
+    }), 200
+
+
 
 
 @app.route('/admin/signup', methods=['POST', 'OPTIONS'])
@@ -758,9 +892,126 @@ def fetch_user_orders(user_id):
 
 
 
+
+
+def send_order_confirmation_email(user_email, order, order_items):
+    """Send order confirmation email with order details and tracking link."""
+
+    
+    item_rows = ""
+    for item in order_items:
+        menu_item = MenuItem.query.get(item.menu_item_id)
+        item_name = menu_item.item_name if menu_item else "Unknown Item"
+        item_total = float(item.price * item.quantity)
+        item_rows += f"""
+            <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;">
+                    <strong>{item_name}</strong> x {item.quantity}
+                </td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right; color: #4CAF50;">
+                    Ksh {item_total:,.2f}
+                </td>
+            </tr>
+        """
+
+   
+    base_url = os.getenv("FRONTEND_BASE_URL", "http://localhost:3000")
+    track_link = f"{base_url}/track-order/{order.id}"
+
+    
+    msg = Message(
+        subject="🍔 Your Delicious Order Confirmation - The Sizzled Munch",
+        sender=app.config['MAIL_USERNAME'],
+        recipients=[user_email],
+    )
+
+   
+    msg.html = f"""
+    <div style="background-color:#f4f4f4; padding: 30px 0; font-family: Arial, sans-serif;">
+        <div style="max-width: 600px; background: #ffffff; margin: auto; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+            <div style="background-color: #d63447; padding: 20px; color: #ffffff; text-align: center;">
+                <h1 style="margin: 0; font-size: 24px;">🍔 The Sizzled Munch</h1>
+                <p style="margin: 5px 0 0; font-size: 16px;">Order Confirmation</p>
+            </div>
+            <div style="padding: 20px;">
+                <p>Hi there,</p>
+                <p>We’re thrilled to let you know that we’ve received your order! Here’s a summary:</p>
+                <table style="width: 100%; border-collapse: collapse;">
+                    {item_rows}
+                </table>
+                <p style="margin-top: 20px; font-size: 16px;">
+                    <strong>Total Amount:</strong>
+                    <span style="color: #ff5722;">Ksh {float(order.total_amount):,.2f}</span>
+                </p>
+                <p style="margin-top: 20px;">You'll receive updates as we prepare your meal 🍽️.</p>
+                <div style="margin-top: 30px; text-align: center;">
+                    <a href="{track_link}" style="display: inline-block; padding: 12px 20px; background-color: #d63447; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: bold;">
+                        Track Your Order
+                    </a>
+                </div>
+            </div>
+            <div style="background-color: #f9f9f9; padding: 15px; text-align: center; font-size: 12px; color: #999;">
+                The Sizzled Munch, Nairobi, Kenya<br>
+                Need help? <a href="mailto:support@thesizzledmunch.com" style="color: #999;">Contact Support</a>
+            </div>
+        </div>
+    </div>
+    """
+
+    
+    plain_items = ""
+    for item in order_items:
+        menu_item = MenuItem.query.get(item.menu_item_id)
+        item_name = menu_item.item_name if menu_item else "Unknown Item"
+        item_total = float(item.price * item.quantity)
+        plain_items += f"{item_name} x {item.quantity} - Ksh {item_total:,.2f}\n"
+
+    msg.body = (
+        "Thank you for your order from The Sizzled Munch!\n\n"
+        "Order Summary:\n"
+        f"{plain_items}\n"
+        f"Total Amount: Ksh {float(order.total_amount):,.2f}\n\n"
+        f"Track your order here: {track_link}\n"
+    )
+
+    # Send email
+    mail.send(msg)
+
+
+
 @app.route('/users/<int:user_id>/orders', methods=['GET'])
 def get_user_orders(user_id):
-    return fetch_user_orders(user_id)
+    orders = Order.query.filter_by(user_id=user_id).all()
+    active_orders = []
+    history_orders = []
+    for order in orders:
+        items = OrderItem.query.filter_by(order_id=order.id).all()
+        order_items = []
+        for item in items:
+            menu_item = MenuItem.query.get(item.menu_item_id)
+            order_items.append({
+                'item_name': menu_item.item_name if menu_item else "Unknown Item",
+                'quantity': item.quantity,
+                'price': float(item.price)
+            })
+
+        order_data = {
+            'id': order.id,
+            'total_amount': float(order.total_amount),
+            'status': getattr(order, 'status', 'Pending'),
+            'created_at': getattr(order, 'created_at', datetime.utcnow()),
+            'items': order_items
+        }
+
+        if order.status == 'Completed':
+            history_orders.append(order_data)
+        else:
+            active_orders.append(order_data)
+
+    return jsonify({
+        'active_orders': active_orders,
+        'history_orders': history_orders
+    }), 200
 
 
 
@@ -772,41 +1023,52 @@ def admin_view_user_orders(user_id):
 
 @app.route('/orders', methods=['POST'])
 def create_order():
-    data = request.json
-    user_id = data.get('user_id')
-    items = data.get('items', [])
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        items = data.get('items', [])
 
-    if not user_id or not items:
-        return jsonify({'error': 'User ID and items are required.'}), 400
+        if not user_id or not items:
+            return jsonify({'error': 'User ID and items are required.'}), 400
 
-   
-    valid_menu_item_ids = {item.id for item in MenuItem.query.all()}
-    invalid_items = [item for item in items if item['menu_item_id'] not in valid_menu_item_ids]
-    if invalid_items:
-        return jsonify({
-            "error": "Some menu items in your order do not exist.",
-            "invalid_items": invalid_items
-        }), 400
+        valid_menu_item_ids = {item.id for item in MenuItem.query.all()}
+        invalid_items = [item for item in items if item['menu_item_id'] not in valid_menu_item_ids]
+        if invalid_items:
+            return jsonify({
+                "error": "Some menu items in your order do not exist.",
+                "invalid_items": invalid_items
+            }), 400
 
-    
-    total = sum(item['quantity'] * float(item['price']) for item in items)
+        total = sum(item['quantity'] * float(item['price']) for item in items)
 
-    
-    order = Order(user_id=user_id, total_amount=total)
-    db.session.add(order)
-    db.session.flush()  
+        order = Order(user_id=user_id, total_amount=total)
+        db.session.add(order)
+        db.session.flush()
 
-    for item in items:
-        order_item = OrderItem(
-            order_id=order.id,
-            menu_item_id=item['menu_item_id'],
-            quantity=item['quantity'],
-            price=float(item['price'])
-        )
-        db.session.add(order_item)
+        order_items = []
+        for item in items:
+            order_item = OrderItem(
+                order_id=order.id,
+                menu_item_id=item['menu_item_id'],
+                quantity=item['quantity'],
+                price=float(item['price'])
+            )
+            db.session.add(order_item)
+            order_items.append(order_item)
 
-    db.session.commit()
-    return jsonify({"message": "Order placed successfully", "order_id": order.id}), 201
+        db.session.commit()
+
+        user = User.query.get(user_id)
+        if user:
+            send_order_confirmation_email(user.email, order, order_items)
+
+        return jsonify({"message": "Order placed successfully", "order_id": order.id}), 201
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Order creation failed: {str(e)}")
+        return jsonify({'error': 'Failed to place order.'}), 500
+
 
 
 
@@ -940,7 +1202,7 @@ def user_profile(user_id):
             "email": user.email,
             "delivery_address": user.delivery_address,
             "phone_number": user.phone_number,
-            "profile_image": user.profile_image  # ✅ Include image in response
+            "profile_image": user.profile_image  
         })
 
     if request.method == 'PATCH':
@@ -949,7 +1211,7 @@ def user_profile(user_id):
         user.email = data.get('email', user.email)
         user.delivery_address = data.get('delivery_address', user.delivery_address)
         user.phone_number = data.get('phone_number', user.phone_number)
-        user.profile_image = data.get('profile_image', user.profile_image)  # ✅ Save image
+        user.profile_image = data.get('profile_image', user.profile_image)  
         db.session.commit()
         return jsonify({"message": "Profile updated successfully"})
 
@@ -958,11 +1220,11 @@ def user_profile(user_id):
         db.session.commit()
         return jsonify({"message": "Profile deleted successfully"})
 
-#more items#
+
 @app.route('/reset_password', methods=['POST'])
 def request_password_reset():
     data = request.get_json()
-    email = data.get('email')
+    email = data.get('email', '').strip().lower()  # ✅ Normalize email here
 
     if not email:
         return jsonify({'message': 'Email is required'}), 400
@@ -971,20 +1233,27 @@ def request_password_reset():
     if not user:
         return jsonify({'message': 'User not found'}), 404
 
+   
+
     token = generate_reset_token(email)
     reset_link = f"http://localhost:3000/reset_password/{token}"
 
-    # ✅ Send Email Here
     try:
         msg = Message(
             subject='Sizzled Munch Password Reset',
             sender=app.config['MAIL_USERNAME'],
             recipients=[email],
-            body=f'Click this link to reset your password:\n\n{reset_link}\n\nIf you did not request this, ignore this email.'
+            body=(
+                f"Hello {user.username},\n\n"
+                f"You requested to reset your password.\n\n"
+                f"Click the link below to reset it:\n\n{reset_link}\n\n"
+                f"If you didn't request this, please ignore this email.\n\n"
+                f"- Sizzled Munch Team"
+            )
         )
         mail.send(msg)
     except Exception as e:
-        print(f"Email sending failed: {e}")
+        app.logger.error(f"Password reset email failed: {e}")
         return jsonify({'message': 'Failed to send reset email.'}), 500
 
     return jsonify({'message': 'Password reset email sent successfully!'}), 200
@@ -1024,7 +1293,7 @@ def send_verification():
         return jsonify({'message': 'User not found'}), 404
 
     code = send_verification_email(email, ip_address)
-    user.verification_code = code  # Add this to your User model
+    user.verification_code = code  
     db.session.commit()
 
     return jsonify({'message': 'Verification code sent successfully'}), 200
@@ -1044,7 +1313,7 @@ def verify_email_code():
     if user.verification_code != code:
         return jsonify({'message': 'Invalid verification code'}), 400
 
-    # Optionally: Clear code or set verified flag
+    
     user.verification_code = None
     db.session.commit()
 
@@ -1066,11 +1335,38 @@ def verify_email():
         return jsonify({'error': 'Invalid verification code'}), 400
 
     
+    expiry_minutes = 5
+    if user.verification_code_sent_at and datetime.utcnow() - user.verification_code_sent_at > timedelta(minutes=expiry_minutes):
+        return jsonify({'error': 'Verification code expired'}), 400
+
     user.verification_code = None
     user.verification_code_sent_at = None
     db.session.commit()
 
     return jsonify({'message': 'Email verified successfully'}), 200
+
+@app.route('/resend_verification', methods=['POST'])
+def resend_verification():
+    data = request.get_json()
+    email = data.get('email')
+
+    if not email:
+        return jsonify({'error': 'Email is required'}), 400
+
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    
+    new_code = send_verification_email(email, request.remote_addr)
+    user.verification_code = new_code
+    user.verification_code_sent_at = datetime.utcnow()
+    db.session.commit()
+
+    return jsonify({'message': 'A new verification code has been sent to your email. Please check your inbox and spam folder.'}), 200
+
+
+
 
 
 
