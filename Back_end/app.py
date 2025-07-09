@@ -354,22 +354,27 @@ Sizzled Munch, 00100, Nairobi, Kaunda Street.
 @app.route('/signin', methods=['POST'])
 def signin():
     data = request.get_json()
-    username = data.get('username')
+    identifier = data.get('identifier')
     password = data.get('password')
 
+    if not identifier or not password:
+        return jsonify({'error': 'Missing credentials'}), 400
+
+    # Check Admin first
     admin = AdminUser.query.filter(
-        (AdminUser.username == username) | (AdminUser.email == username)
+        (AdminUser.username == identifier) | (AdminUser.email == identifier)
     ).first()
     if admin and admin.check_password(password):
         session['user_id'] = admin.id
         session['is_admin'] = True
-        admin.is_online = True  
-        admin.last_login_at = datetime.utcnow()  
+        admin.is_online = True
+        admin.last_login_at = datetime.utcnow()
         db.session.commit()
         return jsonify(serialize_admin(admin))
 
+    # Check Normal User
     user = User.query.filter(
-        (User.username == username) | (User.email == username)
+        (User.username == identifier) | (User.email == identifier)
     ).first()
     if user and user.check_password(password):
         session['user_id'] = user.id
@@ -379,32 +384,27 @@ def signin():
         db.session.commit()
         return jsonify(serialize_user(user))
 
-    return jsonify({"error": "Invalid username/email or password"}), 401
+    return jsonify({'error': 'Invalid username/email or password'}), 401
 
 @app.route('/logout', methods=['POST'])
 def logout():
     user_id = session.get('user_id')
 
-    
-    if not user_id:
-        session.clear()
-        return jsonify({"message": "Logged out successfully"}), 200
-
-    if session.get('is_admin'):
-        admin = db.session.get(AdminUser, user_id)
-        if admin:
-            admin.is_online = False
-            db.session.commit()
-    else:
-        user = db.session.get(User, user_id)
-        if user:
-            user.is_online = False
-            user.force_logout = False 
-            db.session.commit()
+    if user_id:
+        if session.get('is_admin'):
+            admin = db.session.get(AdminUser, user_id)
+            if admin:
+                admin.is_online = False
+                db.session.commit()
+        else:
+            user = db.session.get(User, user_id)
+            if user:
+                user.is_online = False
+                user.force_logout = False  # If needed
+                db.session.commit()
 
     session.clear()
-    return jsonify({"message": "Logged out successfully"}), 200
-
+    return jsonify({'message': 'Logged out successfully'}), 200
 
 
 
