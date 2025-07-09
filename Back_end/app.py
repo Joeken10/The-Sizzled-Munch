@@ -321,7 +321,12 @@ Sizzled Munch, 00100, Nairobi, Kaunda Street.
 """
     mail.send(msg)
 
-    return jsonify({'message': 'User registered. Verification email sent.'}), 201
+    # ✅ Return user object along with message:
+    return jsonify({
+        'message': 'User registered. Verification email sent.',
+        'user': serialize_user(user)
+    }), 201
+
 
 
 @app.route('/signin', methods=['POST'])
