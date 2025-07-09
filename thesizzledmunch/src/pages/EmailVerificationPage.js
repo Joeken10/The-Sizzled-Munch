@@ -1,7 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { AuthContext } from '../App';
 import { useNavigate } from 'react-router-dom';
-import { apiFetch } from '../api';
 
 const EmailVerificationPage = () => {
   const { user, setUser } = useContext(AuthContext);
@@ -12,8 +11,10 @@ const EmailVerificationPage = () => {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [resendMessage, setResendMessage] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [resendCooldown, setResendCooldown] = useState(0);
+  const [loadingVerify, setLoadingVerify] = useState(false);
+  const [loadingResend, setLoadingResend] = useState(false);
+
+  const API_URL = process.env.REACT_APP_API_URL;
 
   useEffect(() => {
     if (email) {
@@ -22,17 +23,16 @@ const EmailVerificationPage = () => {
   }, [email]);
 
   useEffect(() => {
-    if (resendCooldown > 0) {
-      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [resendCooldown]);
+    setMessage('');
+    setError('');
+    setResendMessage('');
+  }, [code, email]);
 
   const handleVerify = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setLoadingVerify(true);
     try {
-      const res = await apiFetch('/verify_email', {
+      const res = await fetch(`${API_URL}/verify_email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, verification_code: code }),
@@ -41,28 +41,26 @@ const EmailVerificationPage = () => {
       const data = await res.json();
       if (res.ok) {
         setMessage(data.message);
-        setError('');
         setTimeout(() => {
           setUser(null);
           localStorage.removeItem('user');
           navigate('/signin?verified=1');
         }, 2000);
       } else {
-        throw new Error(data.error || 'Verification failed');
+        setError(data.error || 'Verification failed');
       }
     } catch (err) {
-      setError(err.message);
-      setMessage('');
+      setError('Something went wrong.');
     } finally {
-      setLoading(false);
+      setLoadingVerify(false);
     }
   };
 
   const handleResendCode = async () => {
     if (!email) return;
-    setLoading(true);
+    setLoadingResend(true);
     try {
-      const res = await apiFetch('/resend_verification', {
+      const res = await fetch(`${API_URL}/resend_verification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
@@ -71,14 +69,13 @@ const EmailVerificationPage = () => {
       const data = await res.json();
       if (res.ok) {
         setResendMessage(data.message);
-        setResendCooldown(30);
       } else {
-        throw new Error(data.error || 'Failed to resend verification code.');
+        setResendMessage(data.error || 'Failed to resend code.');
       }
     } catch (err) {
-      setResendMessage(err.message);
+      setResendMessage('Something went wrong.');
     } finally {
-      setLoading(false);
+      setLoadingResend(false);
     }
   };
 
@@ -104,23 +101,21 @@ const EmailVerificationPage = () => {
           onChange={(e) => setCode(e.target.value)}
           style={styles.input}
         />
-        <button type="submit" style={styles.button} disabled={loading}>
-          {loading ? 'Verifying...' : 'Verify Email'}
+        <button
+          type="submit"
+          style={styles.button}
+          disabled={loadingVerify || loadingResend}
+        >
+          {loadingVerify ? 'Verifying...' : 'Verify Email'}
         </button>
       </form>
 
       <button
         onClick={handleResendCode}
-        style={{
-          ...styles.resendButton,
-          backgroundColor: resendCooldown > 0 ? '#ccc' : '#28a745',
-          cursor: resendCooldown > 0 ? 'not-allowed' : 'pointer',
-        }}
-        disabled={loading || !email || resendCooldown > 0}
+        style={styles.resendButton}
+        disabled={loadingVerify || loadingResend || !email || resendMessage}
       >
-        {resendCooldown > 0
-          ? `Resend in ${resendCooldown}s`
-          : 'Resend Verification Code'}
+        {loadingResend ? 'Sending...' : 'Resend Verification Code'}
       </button>
 
       {resendMessage && <p style={styles.info}>{resendMessage}</p>}
@@ -162,10 +157,12 @@ const styles = {
   resendButton: {
     marginTop: '10px',
     padding: '10px',
+    backgroundColor: '#28a745',
+    color: '#fff',
     fontWeight: 'bold',
     border: 'none',
     borderRadius: '5px',
-    color: '#fff',
+    cursor: 'pointer',
   },
   success: { color: 'green', marginTop: '15px' },
   error: { color: 'red', marginTop: '15px' },
