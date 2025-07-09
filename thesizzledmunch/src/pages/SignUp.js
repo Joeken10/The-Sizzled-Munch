@@ -18,7 +18,8 @@ function SignUp() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const API_URL = process.env.REACT_APP_API_URL;
+  const API_URL = process.env.REACT_APP_API_URL || 'https://the-sizzled-munch.onrender.com';
+  console.log('API_URL:', API_URL);  // Debug
 
   const apiFetch = (url, options = {}) =>
     fetch(`${API_URL}${url}`, { credentials: 'include', ...options });
@@ -51,12 +52,10 @@ function SignUp() {
     }
 
     if (!validateEmail(email)) return;
-
     if (!checkPasswordStrength(password)) {
       toast.error('Password is too weak.');
       return;
     }
-
     if (password !== confirmPassword) {
       toast.error('Passwords do not match.');
       return;
