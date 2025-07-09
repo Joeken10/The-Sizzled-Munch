@@ -1,6 +1,7 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { AuthContext } from '../App';
 import { useNavigate } from 'react-router-dom';
+import { apiFetch } from '../api';
 
 const EmailVerificationPage = () => {
   const { user, setUser } = useContext(AuthContext);
@@ -13,8 +14,6 @@ const EmailVerificationPage = () => {
   const [resendMessage, setResendMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
-
-  const API_BASE = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
   useEffect(() => {
     if (email) {
@@ -33,7 +32,7 @@ const EmailVerificationPage = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/verify_email`, {
+      const res = await apiFetch('/verify_email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, verification_code: code }),
@@ -63,7 +62,7 @@ const EmailVerificationPage = () => {
     if (!email) return;
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/resend_verification`, {
+      const res = await apiFetch('/resend_verification', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
@@ -72,7 +71,7 @@ const EmailVerificationPage = () => {
       const data = await res.json();
       if (res.ok) {
         setResendMessage(data.message);
-        setResendCooldown(30); // 30 seconds cooldown
+        setResendCooldown(30);
       } else {
         throw new Error(data.error || 'Failed to resend verification code.');
       }
