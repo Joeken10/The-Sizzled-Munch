@@ -20,8 +20,8 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# SECRET KEY is REQUIRED for sessions
-app.secret_key = os.getenv('SECRET_KEY', 'default-unsafe-key')  # Replace in .env for production
+
+app.secret_key = os.getenv('SECRET_KEY', 'default-unsafe-key')  
 
 db_uri = os.getenv('DATABASE_URL')
 if db_uri and db_uri.startswith('postgres://'):
