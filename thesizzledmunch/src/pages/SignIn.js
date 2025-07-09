@@ -2,6 +2,7 @@ import React, { useState, useContext, useEffect } from 'react';
 import './AuthForms.css';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { AuthContext } from '../App';
+import { toast } from 'react-toastify';
 
 function SignIn() {
   const { user, setUser } = useContext(AuthContext);
@@ -16,7 +17,10 @@ function SignIn() {
   const queryParams = new URLSearchParams(location.search);
   const verified = queryParams.get('verified');
 
-  const API_URL = process.env.REACT_APP_API_URL;  
+  const API_URL = process.env.REACT_APP_API_URL || 'https://the-sizzled-munch.onrender.com';
+
+  const apiFetch = (url, options = {}) =>
+    fetch(`${API_URL}${url}`, { credentials: 'include', ...options });
 
   useEffect(() => {
     if (user) {
@@ -39,12 +43,11 @@ function SignIn() {
     setLoading(true);
     setError('');
     try {
-      const response = await fetch(`${API_URL}/signin`, {
+      const response = await apiFetch('/signin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({
-          username: identifier.trim().toLowerCase(),  
+          username: identifier.trim().toLowerCase(),
           password,
         }),
       });
@@ -61,6 +64,7 @@ function SignIn() {
         if (rememberMe) {
           localStorage.setItem('user', JSON.stringify(data));
         }
+        toast.success('Signed in successfully!');
         if (data.isAdmin) {
           navigate('/admin/menu');
         } else {
