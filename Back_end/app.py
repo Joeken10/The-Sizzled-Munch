@@ -258,6 +258,10 @@ def get_payment_status_by_txn(transaction_id):
 
 
 
+@app.before_request
+def log_request():
+    print(f"[{datetime.utcnow()}] {request.method} {request.path} | Data: {request.get_json(silent=True)}")
+
 
 @app.route('/')
 def home():
@@ -275,28 +279,45 @@ def signup():
     username = data.get('username')
     email = data.get('email')
     password = data.get('password')
+    is_google = data.get('is_google', False)
 
-    if not username or not email or not password:
-        return jsonify({'error': 'All fields are required'}), 400
+    if not username or not email:
+        return jsonify({'error': 'Username and email are required'}), 400
 
+    
     if User.query.filter_by(username=username).first():
         return jsonify({'error': 'Username already exists'}), 409
-
     if User.query.filter_by(email=email).first():
         return jsonify({'error': 'Email already exists'}), 409
 
-    verification_code = generate_verification_code()
+    
+    if is_google:
+        user = User(username=username, email=email, is_verified=True)
+        db.session.add(user)
+        db.session.commit()
+        session['user_id'] = user.id  # ✅ Log user in immediately
+        session['is_admin'] = False
+        return jsonify({
+            'message': 'Google user registered successfully.',
+            'user': serialize_user(user)
+        }), 201
 
+   
+    if not password:
+        return jsonify({'error': 'Password is required for normal signup'}), 400
+
+    verification_code = generate_verification_code()
     user = User(
         username=username,
         email=email,
         verification_code=verification_code,
         verification_code_sent_at=datetime.utcnow()
     )
-    user.password = password
+    user.password = password 
     db.session.add(user)
     db.session.commit()
 
+    # ✅ Send Verification Email:
     msg = Message(
         subject="Verify Your Sizzled Munch Email",
         sender=app.config['MAIL_USERNAME'],
@@ -312,7 +333,6 @@ Enter this verification code:
 The request for this verification originated from IP: 127.0.0.1
 
 If this wasn’t you, we recommend:
-
     Resetting your Sizzled Munch password immediately.
     Checking your account for unauthorized changes.
     Contacting Sizzled Munch support if you can't access your account.
@@ -321,7 +341,9 @@ Sizzled Munch, 00100, Nairobi, Kaunda Street.
 """
     mail.send(msg)
 
-    # ✅ Return user object along with message:
+    session['user_id'] = user.id  
+    session['is_admin'] = False
+
     return jsonify({
         'message': 'User registered. Verification email sent.',
         'user': serialize_user(user)
