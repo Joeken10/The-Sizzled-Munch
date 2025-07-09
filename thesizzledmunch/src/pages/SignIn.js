@@ -65,11 +65,7 @@ function SignIn() {
           localStorage.setItem('user', JSON.stringify(data));
         }
         toast.success('Signed in successfully!');
-        if (data.isAdmin) {
-          navigate('/admin/menu');
-        } else {
-          navigate('/');
-        }
+        navigate(data.isAdmin ? '/admin/menu' : '/');
       } else {
         setError(data.error || 'Invalid username/email or password.');
       }
