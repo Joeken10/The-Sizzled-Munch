@@ -16,12 +16,7 @@ function SignIn() {
   const queryParams = new URLSearchParams(location.search);
   const verified = queryParams.get('verified');
 
-
-  const API_URL =
-    process.env.REACT_APP_API_URL ||
-    (window.location.hostname === 'localhost'
-      ? 'http://localhost:8000'
-      : 'https://the-sizzled-munch.onrender.com');
+  const API_URL = process.env.REACT_APP_API_URL;  
 
   useEffect(() => {
     if (user) {
@@ -43,14 +38,13 @@ function SignIn() {
 
     setLoading(true);
     setError('');
-
     try {
       const response = await fetch(`${API_URL}/signin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          username: identifier.trim().toLowerCase(),  // Normalize input
+          username: identifier.trim().toLowerCase(),  
           password,
         }),
       });
