@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import './UserProfile.css';
 import { AuthContext } from '../App';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 function UserProfile({ userId }) {
   const { setUser } = useContext(AuthContext);
@@ -12,75 +13,83 @@ function UserProfile({ userId }) {
     email: '',
     delivery_address: '',
     phone_number: '',
-    profile_image: ''
+    profile_image: '',
   });
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
-  const [message, setMessage] = useState('');
   const [showModal, setShowModal] = useState(false);
 
+  const API_URL = process.env.REACT_APP_API_URL || 'https://the-sizzled-munch.onrender.com';
+
   useEffect(() => {
-    fetch(`http://localhost:8000/user/${userId}/profile`)
-      .then((res) => res.json())
-      .then((data) => {
-        setProfile({
-          username: data.username,
-          email: data.email,
-          delivery_address: data.delivery_address,
-          phone_number: data.phone_number,
-          profile_image: data.profile_image || ''
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch(`${API_URL}/user/${userId}/profile`, {
+          credentials: 'include',
         });
+        if (res.ok) {
+          const data = await res.json();
+          setProfile({
+            username: data.username,
+            email: data.email,
+            delivery_address: data.delivery_address,
+            phone_number: data.phone_number,
+            profile_image: data.profile_image || '',
+          });
+        } else {
+          toast.error('Failed to load profile.');
+        }
+      } catch (err) {
+        console.error('Fetch error:', err);
+        toast.error('Error fetching profile.');
+      } finally {
         setLoading(false);
-      })
-      .catch((err) => {
-        console.error('Failed to load profile:', err);
-        setLoading(false);
-      });
-  }, [userId]);
+      }
+    };
+    fetchProfile();
+  }, [userId, API_URL]);
 
-  useEffect(() => {
-    if (message) {
-      const timer = setTimeout(() => setMessage(''), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [message]);
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    fetch(`http://localhost:8000/user/${userId}/profile`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(profile)
-    })
-      .then(() => {
-        setMessage('Profile updated successfully!');
+    try {
+      const res = await fetch(`${API_URL}/user/${userId}/profile`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(profile),
+      });
+      if (res.ok) {
+        toast.success('Profile updated successfully!');
         setEditMode(false);
-        setUser((prev) => ({
-          ...prev,
-          ...profile
-        }));
-      })
-      .catch((err) => console.error('Failed to update profile:', err));
+        setUser((prev) => ({ ...prev, ...profile }));
+      } else {
+        toast.error('Failed to update profile.');
+      }
+    } catch (err) {
+      console.error('Update error:', err);
+      toast.error('Error updating profile.');
+    }
   };
 
   const confirmDelete = async (password) => {
     try {
-      const res = await fetch(`http://localhost:8000/user/${userId}/self_delete`, {
+      const res = await fetch(`${API_URL}/user/${userId}/self_delete`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ password }),
       });
-
       if (res.ok) {
-        setMessage('Account deleted successfully.');
+        toast.success('Account deleted successfully.');
         setUser(null);
         navigate('/');
       } else {
         const err = await res.json();
-        alert(err.error || 'Failed to delete account.');
+        toast.error(err.error || 'Failed to delete account.');
       }
     } catch (err) {
-      console.error('Failed to delete account:', err);
+      console.error('Delete error:', err);
+      toast.error('Error deleting account.');
     } finally {
       setShowModal(false);
     }
@@ -88,14 +97,15 @@ function UserProfile({ userId }) {
 
   const handleLogout = async () => {
     try {
-      await fetch('http://localhost:8000/logout', {
+      await fetch(`${API_URL}/logout`, {
         method: 'POST',
         credentials: 'include',
       });
       setUser(null);
       navigate('/');
     } catch (err) {
-      console.error('Logout request failed:', err);
+      console.error('Logout error:', err);
+      toast.error('Failed to logout.');
     }
   };
 
@@ -104,8 +114,6 @@ function UserProfile({ userId }) {
   return (
     <div className="user-profile-form">
       <h2>My Profile</h2>
-
-      {message && <p className="success-message">{message}</p>}
 
       <img
         src={profile.profile_image || 'https://via.placeholder.com/150'}
@@ -168,7 +176,6 @@ function UserProfile({ userId }) {
         </div>
       )}
 
-      
       {showModal && (
         <PasswordConfirmModal
           onConfirm={confirmDelete}

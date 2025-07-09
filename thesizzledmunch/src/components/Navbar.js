@@ -3,6 +3,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../App';
 import './Navbar.css';
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+
 function Navbar({ cartItemCount }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -12,14 +14,14 @@ function Navbar({ cartItemCount }) {
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchInput.trim()) {
-      navigate(`/menu?search=${encodeURIComponent(searchInput)}`);
+      navigate(`/menu?search=${encodeURIComponent(searchInput.trim())}`);
       setSearchInput('');
     }
   };
 
   const handleLogout = async () => {
     try {
-      await fetch('http://localhost:8000/logout', {
+      await fetch(`${API_BASE_URL}/logout`, {
         method: 'POST',
         credentials: 'include',
       });
@@ -29,6 +31,8 @@ function Navbar({ cartItemCount }) {
     setUser(null);
     navigate('/');
   };
+
+  const isActive = (path) => location.pathname === path;
 
   return (
     <nav className="navbar" aria-label="Main navigation">
@@ -40,18 +44,12 @@ function Navbar({ cartItemCount }) {
 
       <ul className="navbar-links">
         <li>
-          <Link
-            to="/"
-            className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}
-          >
+          <Link to="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>
             Home
           </Link>
         </li>
         <li>
-          <Link
-            to="/menu"
-            className={`nav-link ${location.pathname === '/menu' ? 'active' : ''}`}
-          >
+          <Link to="/menu" className={`nav-link ${isActive('/menu') ? 'active' : ''}`}>
             Menu
           </Link>
         </li>
@@ -129,7 +127,6 @@ function Navbar({ cartItemCount }) {
                     className="avatar-img"
                   />
                 </Link>
-                
               </>
             )}
           </>

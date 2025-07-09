@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import './AdminDashboard.css';
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+
 function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [darkMode, setDarkMode] = useState(() => {
@@ -8,7 +10,7 @@ function AdminDashboard() {
   });
 
   useEffect(() => {
-    fetch('http://localhost:8000/admin/analytics')
+    fetch(`${API_BASE_URL}/admin/analytics`)
       .then((res) => res.json())
       .then((data) => setStats(data))
       .catch((err) => console.error('Failed to load analytics', err));

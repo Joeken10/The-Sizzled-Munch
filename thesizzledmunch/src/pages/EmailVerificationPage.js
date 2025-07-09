@@ -2,6 +2,8 @@ import React, { useState, useContext, useEffect } from 'react';
 import { AuthContext } from '../App';
 import { useNavigate } from 'react-router-dom';
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+
 const EmailVerificationPage = () => {
   const { user, setUser } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -13,8 +15,6 @@ const EmailVerificationPage = () => {
   const [resendMessage, setResendMessage] = useState('');
   const [loadingVerify, setLoadingVerify] = useState(false);
   const [loadingResend, setLoadingResend] = useState(false);
-
-  const API_URL = process.env.REACT_APP_API_URL;
 
   useEffect(() => {
     if (email) {

@@ -2,6 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import './AdminUsers.css';
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+
 function AdminUsers() {
   const [users, setUsers] = useState([]);
   const [storedUser, setStoredUser] = useState(() => JSON.parse(localStorage.getItem('user')));
@@ -16,16 +18,14 @@ function AdminUsers() {
 
   const fetchUsers = useCallback(async () => {
     try {
-      const res = await fetch(`http://localhost:8000/admin/users?admin_id=${adminId}`);
+      const res = await fetch(`${API_BASE_URL}/admin/users?admin_id=${adminId}`);
       if (!res.ok) throw new Error('Unauthorized');
       const data = await res.json();
-
       const formattedUsers = data.map((user) => ({
         ...user,
         isOnline: user.is_online,
         profileImage: user.profile_image,
       }));
-
       setUsers(formattedUsers);
     } catch {
       toast.error('Failed to load users');
@@ -42,7 +42,7 @@ function AdminUsers() {
     if (!window.confirm('Are you sure you want to delete this user?')) return;
 
     try {
-      const res = await fetch(`http://localhost:8000/admin/users/${userId}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/users/${userId}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ admin_id: adminId }),
@@ -69,7 +69,7 @@ function AdminUsers() {
     if (!window.confirm(confirmMsg)) return;
 
     try {
-      const res = await fetch(`http://localhost:8000/admin/users/${userId}/${action}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/users/${userId}/${action}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ admin_id: adminId }),
@@ -80,10 +80,7 @@ function AdminUsers() {
         toast.success(msg);
 
         if (userId === adminId) {
-          const updatedUser = {
-            ...storedUser,
-            isAdmin: action === 'promote',
-          };
+          const updatedUser = { ...storedUser, isAdmin: action === 'promote' };
           localStorage.setItem('user', JSON.stringify(updatedUser));
           setStoredUser(updatedUser);
 
@@ -124,7 +121,7 @@ function AdminUsers() {
   const handleUpdateSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(`http://localhost:8000/admin/users/${editingUser.id}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/users/${editingUser.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -227,7 +224,6 @@ function AdminUsers() {
         </div>
       )}
 
-      {/* Edit Modal */}
       {editingUser && (
         <div className="modal-overlay">
           <div className="modal-content">

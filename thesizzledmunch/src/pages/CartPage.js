@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../App';
 import './CartPage.css';
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+
 function CartPage({ cart, setCart }) {
   const { user } = useContext(AuthContext);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -11,11 +13,9 @@ function CartPage({ cart, setCart }) {
 
   useEffect(() => {
     if (user?.id) {
-      fetch(`http://localhost:8000/cart_items?user_id=${user.id}`)
+      fetch(`${API_BASE_URL}/cart_items?user_id=${user.id}`)
         .then((res) => res.json())
-        .then((data) => {
-          setCart(Array.isArray(data) ? data : []);
-        })
+        .then((data) => setCart(Array.isArray(data) ? data : []))
         .catch((err) => console.error('Error fetching cart:', err));
     }
   }, [user, setCart]);
@@ -28,7 +28,7 @@ function CartPage({ cart, setCart }) {
   const handleRemoveConfirmed = async () => {
     if (itemToRemove) {
       try {
-        await fetch(`http://localhost:8000/cart_items/${itemToRemove.id}`, {
+        await fetch(`${API_BASE_URL}/cart_items/${itemToRemove.id}`, {
           method: 'DELETE',
         });
         setCart((prevCart) =>
@@ -49,16 +49,13 @@ function CartPage({ cart, setCart }) {
 
   const updateQuantity = async (id, newQuantity) => {
     try {
-      await fetch(`http://localhost:8000/cart_items/${id}`, {
+      await fetch(`${API_BASE_URL}/cart_items/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ quantity: newQuantity }),
       });
-
       setCart((prevCart) =>
-        prevCart.map((i) =>
-          i.id === id ? { ...i, quantity: newQuantity } : i
-        )
+        prevCart.map((i) => (i.id === id ? { ...i, quantity: newQuantity } : i))
       );
     } catch (error) {
       console.error('Failed to update quantity:', error);
@@ -79,15 +76,13 @@ function CartPage({ cart, setCart }) {
     updateQuantity(id, newQuantity);
   };
 
-  const totalWithTaxes = cart.reduce(
+  const subtotal = cart.reduce(
     (acc, item) => acc + item.price * (item.quantity || 1),
     0
   );
-
-  const basePrice = totalWithTaxes / 1.18;
+  const basePrice = subtotal / 1.18;
   const vat = Math.round(basePrice * 0.16);
   const ctl = Math.round(basePrice * 0.02);
-  const subtotal = totalWithTaxes;
 
   const formatCurrency = (num) =>
     num.toLocaleString(undefined, {
@@ -122,17 +117,11 @@ function CartPage({ cart, setCart }) {
                 </span>
 
                 <div className="quantity-controls">
-                  <button
-                    onClick={() => handleDecrease(item.id)}
-                    type="button"
-                  >
+                  <button onClick={() => handleDecrease(item.id)} type="button">
                     -
                   </button>
                   <span>{item.quantity}</span>
-                  <button
-                    onClick={() => handleIncrease(item.id)}
-                    type="button"
-                  >
+                  <button onClick={() => handleIncrease(item.id)} type="button">
                     +
                   </button>
                 </div>

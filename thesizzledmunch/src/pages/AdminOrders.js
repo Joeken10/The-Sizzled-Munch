@@ -2,12 +2,14 @@ import React, { useEffect, useState } from 'react';
 import './AdminOrders.css';
 import { toast } from 'react-toastify';
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+
 function AdminOrders() {
   const [orders, setOrders] = useState([]);
   const [historyOrders, setHistoryOrders] = useState([]);
 
   useEffect(() => {
-    fetch('http://localhost:8000/admin/orders')
+    fetch(`${API_BASE_URL}/admin/orders`)
       .then((res) => res.json())
       .then((data) => {
         setOrders(data.active_orders);
@@ -21,7 +23,7 @@ function AdminOrders() {
 
   const handleAdvanceStatus = async (orderId) => {
     try {
-      const res = await fetch(`http://localhost:8000/admin/orders/${orderId}/status`, {
+      const res = await fetch(`${API_BASE_URL}/admin/orders/${orderId}/status`, {
         method: 'PATCH',
       });
 
@@ -44,7 +46,7 @@ function AdminOrders() {
 
   const handleAdminConfirm = async (orderId) => {
     try {
-      const res = await fetch(`http://localhost:8000/admin/orders/${orderId}/confirm`, {
+      const res = await fetch(`${API_BASE_URL}/admin/orders/${orderId}/confirm`, {
         method: 'PATCH',
       });
 
@@ -83,7 +85,9 @@ function AdminOrders() {
           <div
             key={stage}
             className={`stage ${stage.toLowerCase()} ${
-              stages.slice(0, stages.indexOf(status) + 1).includes(stage) ? 'completed' : ''
+              stages.slice(0, stages.indexOf(status) + 1).includes(stage)
+                ? 'completed'
+                : ''
             }`}
           >
             {stage}
@@ -162,7 +166,9 @@ function AdminOrders() {
                     </li>
                   ))}
                 </ul>
-                <p className="history-note">{order.user.username} has received their items in good state.</p>
+                <p className="history-note">
+                  {order.user.username} has received their items in good state.
+                </p>
               </div>
             ))}
           </div>

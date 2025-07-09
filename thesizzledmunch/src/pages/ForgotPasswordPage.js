@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './ForgotPasswordPage.css';
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+
 function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
@@ -14,7 +16,7 @@ function ForgotPasswordPage() {
     setMessage('');
 
     try {
-      const response = await fetch('http://localhost:8000/reset_password', {
+      const response = await fetch(`${API_URL}/reset_password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
@@ -22,13 +24,13 @@ function ForgotPasswordPage() {
 
       const data = await response.json();
       if (response.ok) {
-        setMessage('Reset link sent! Check your email.');
-        setTimeout(() => navigate('/signin'), 3000);  // Optional redirect after 3 sec
+        setMessage('Reset link sent! Please check your email.');
+        setTimeout(() => navigate('/signin'), 3000);
       } else {
         setMessage(data.message || 'Email not found.');
       }
     } catch (err) {
-      console.error(err);
+      console.error('Reset Password Error:', err);
       setMessage('Error sending reset link.');
     } finally {
       setLoading(false);

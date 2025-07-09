@@ -3,9 +3,12 @@ import { AuthContext } from '../App';
 import { useNavigate } from 'react-router-dom';
 import './MenuManagement.css';
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+
 function MenuManagement() {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
+
   const [menuItems, setMenuItems] = useState([]);
   const [form, setForm] = useState({
     item_name: '',
@@ -28,11 +31,13 @@ function MenuManagement() {
 
   const fetchMenuItems = async () => {
     try {
-      const res = await fetch('http://localhost:8000/menu_items');
+      const res = await fetch(`${API_URL}/menu_items`);
+      if (!res.ok) throw new Error('Failed to load menu items.');
       const data = await res.json();
       setMenuItems(data);
     } catch (err) {
-      console.error('Failed to fetch menu items:', err);
+      console.error('Fetch error:', err);
+      alert('Failed to load menu items.');
     }
   };
 
@@ -40,14 +45,14 @@ function MenuManagement() {
     e.preventDefault();
 
     if (!form.item_name || !form.price || !form.category) {
-      alert('Please fill all required fields');
+      alert('Please fill all required fields.');
       return;
     }
 
     setLoading(true);
     const url = editingId
-      ? `http://localhost:8000/menu_items/${editingId}`
-      : 'http://localhost:8000/menu_items';
+      ? `${API_URL}/menu_items/${editingId}`
+      : `${API_URL}/menu_items`;
     const method = editingId ? 'PUT' : 'POST';
 
     try {
@@ -62,10 +67,11 @@ function MenuManagement() {
         resetForm();
       } else {
         const data = await res.json();
-        alert(data.error || 'Failed to save item');
+        alert(data.error || 'Failed to save item.');
       }
     } catch (err) {
       console.error('Submit error:', err);
+      alert('Failed to save item.');
     } finally {
       setLoading(false);
     }
@@ -77,7 +83,7 @@ function MenuManagement() {
       price: item.price,
       category: item.category,
       description: item.description,
-      image: item.image,
+      image_url: item.image_url,
       extras: item.extras,
     });
     setEditingId(item.id);
@@ -87,7 +93,7 @@ function MenuManagement() {
     if (!window.confirm('Delete this item?')) return;
 
     try {
-      const res = await fetch(`http://localhost:8000/menu_items/${id}`, {
+      const res = await fetch(`${API_URL}/menu_items/${id}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ admin_id: user.id }),
@@ -97,10 +103,11 @@ function MenuManagement() {
         fetchMenuItems();
       } else {
         const data = await res.json();
-        alert(data.error || 'Failed to delete item');
+        alert(data.error || 'Failed to delete item.');
       }
     } catch (err) {
       console.error('Delete error:', err);
+      alert('Failed to delete item.');
     }
   };
 
@@ -110,7 +117,7 @@ function MenuManagement() {
       price: '',
       category: '',
       description: '',
-      image: '',
+      image_url: '',
       extras: '',
     });
     setEditingId(null);
@@ -149,7 +156,7 @@ function MenuManagement() {
         />
         <input
           type="text"
-          placeholder="Image"
+          placeholder="Image URL"
           value={form.image_url}
           onChange={(e) => setForm({ ...form, image_url: e.target.value })}
         />
@@ -163,35 +170,35 @@ function MenuManagement() {
           {loading ? 'Saving...' : editingId ? 'Update Item' : 'Add Item'}
         </button>
         {editingId && (
-          <button
-            type="button"
-            onClick={resetForm}
-            className="cancel-button"
-          >
+          <button type="button" className="cancel-button" onClick={resetForm}>
             Cancel
           </button>
         )}
       </form>
 
       <div className="menu-list">
-        {menuItems.map((item) => (
-          <div key={item.id} className="menu-item">
-            <h3>{item.item_name}</h3>
-            <p><strong>Price:</strong> ksh. {item.price}</p>
-            <p><strong>Category:</strong> {item.category}</p>
-            {item.description && <p>{item.description}</p>}
-            {item.image && (
-              <img src={item.image} alt={item.item_name} className="menu-image" />
-            )}
-            {item.extras && (
-              <p><strong>Extras:</strong> {item.extras}</p>
-            )}
-            <div className="actions">
-              <button onClick={() => handleEdit(item)}>Edit</button>
-              <button onClick={() => handleDelete(item.id)}>Delete</button>
+        {menuItems.length === 0 ? (
+          <p>No menu items found.</p>
+        ) : (
+          menuItems.map((item) => (
+            <div key={item.id} className="menu-item">
+              <h3>{item.item_name}</h3>
+              <p><strong>Price:</strong> Ksh {Number(item.price).toLocaleString()}</p>
+              <p><strong>Category:</strong> {item.category}</p>
+              {item.description && <p>{item.description}</p>}
+              {item.image_url && (
+                <img src={item.image_url} alt={item.item_name} className="menu-image" />
+              )}
+              {item.extras && (
+                <p><strong>Extras:</strong> {item.extras}</p>
+              )}
+              <div className="actions">
+                <button onClick={() => handleEdit(item)}>Edit</button>
+                <button onClick={() => handleDelete(item.id)}>Delete</button>
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );
