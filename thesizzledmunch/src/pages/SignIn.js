@@ -14,28 +14,26 @@ function SignIn() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
-  const queryParams = new URLSearchParams(location.search);
-  const verified = queryParams.get('verified');
+  const verified = new URLSearchParams(location.search).get('verified');
 
   const API_URL = process.env.REACT_APP_API_URL || 'https://the-sizzled-munch.onrender.com';
 
   const apiFetch = (url, options = {}) =>
-    fetch(`${API_URL}${url}`, { credentials: 'include', ...options });
+    fetch(`${API_URL}${url}`, {
+      credentials: 'include',
+      ...options,
+    });
 
   useEffect(() => {
     if (user) {
-      if (user.isAdmin) {
-        navigate('/admin/menu');
-      } else {
-        navigate('/');
-      }
+      navigate(user.isAdmin ? '/admin/menu' : '/');
     }
   }, [user, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!identifier || !password) {
+    if (!identifier.trim() || !password.trim()) {
       setError('Please enter your username/email and password.');
       return;
     }
@@ -47,7 +45,7 @@ function SignIn() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          username: identifier.trim().toLowerCase(),
+          identifier: identifier.trim().toLowerCase(),
           password,
         }),
       });
@@ -69,8 +67,8 @@ function SignIn() {
       } else {
         setError(data.error || 'Invalid username/email or password.');
       }
-    } catch (error) {
-      console.error('SignIn error:', error);
+    } catch (err) {
+      console.error('SignIn error:', err);
       setError('An error occurred. Please try again later.');
     } finally {
       setLoading(false);
@@ -118,7 +116,7 @@ function SignIn() {
           </span>
         </div>
 
-        <div style={{ marginBottom: '10px' }}>
+        <div className="checkbox-container">
           <label>
             <input
               type="checkbox"
@@ -136,7 +134,7 @@ function SignIn() {
       </form>
 
       <p>
-        Don't have an account?{' '}
+        Don’t have an account?{' '}
         <Link to="/signup" aria-label="Go to Sign Up">
           Sign Up here
         </Link>
