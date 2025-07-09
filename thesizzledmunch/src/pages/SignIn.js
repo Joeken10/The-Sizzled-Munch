@@ -61,7 +61,10 @@ function SignIn() {
         setUser(data);
         if (rememberMe) {
           localStorage.setItem('user', JSON.stringify(data));
+        } else {
+          localStorage.removeItem('user');
         }
+
         toast.success('Signed in successfully!');
         navigate(data.isAdmin ? '/admin/menu' : '/');
       } else {
