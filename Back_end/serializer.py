@@ -3,9 +3,13 @@ def serialize_user(user):
         "id": user.id,
         "username": user.username,
         "email": user.email,
-        "isAdmin": False,
+        "isAdmin": user.is_admin,
         "delivery_address": user.delivery_address,
-        "phone_number": user.phone_number
+        "phone_number": user.phone_number,
+        "profile_image": user.profile_image,  
+        "is_online": user.is_online,
+        "last_login_at": user.last_login_at.isoformat() if user.last_login_at else None,
+        "force_logout": user.force_logout  
     }
 
 
@@ -23,10 +27,10 @@ def serialize_menu_item(item):
         "id": item.id,
         "item_name": item.item_name,
         "category": item.category,
-        "price": float(item.price),  # ✅ Ensure number, not Decimal
+        "price": float(item.price),
         "description": item.description,
         "image": item.image_url,
-        "extras": item.extras or []  # ✅ Default to empty list
+        "extras": item.extras or []
     }
 
 
@@ -38,6 +42,18 @@ def serialize_cart_item(cart_item):
         "menu_item_id": cart_item.menu_item_id,
         "quantity": cart_item.quantity,
         "item_name": getattr(menu_item, 'item_name', None),
-        "price": float(getattr(menu_item, 'price', 0)),  # ✅ Safe cast to float
+        "price": float(getattr(menu_item, 'price', 0)),
         "image_url": getattr(menu_item, 'image_url', None)
+    }
+
+
+def serialize_mpesa_payment(payment):
+    return {
+        "id": payment.id,
+        "phone_number": payment.phone_number,
+        "amount": float(payment.amount),
+        "transaction_id": payment.transaction_id,
+        "status": payment.status,
+        "created_at": payment.created_at.isoformat(),
+        "response_data": payment.response_data
     }

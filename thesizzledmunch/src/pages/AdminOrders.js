@@ -75,6 +75,24 @@ function AdminOrders() {
     }
   };
 
+  const renderProgress = (status) => {
+    const stages = ['Pending', 'Preparing', 'Ready', 'Completed'];
+    return (
+      <div className="status-progress">
+        {stages.map((stage) => (
+          <div
+            key={stage}
+            className={`stage ${stage.toLowerCase()} ${
+              stages.slice(0, stages.indexOf(status) + 1).includes(stage) ? 'completed' : ''
+            }`}
+          >
+            {stage}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="orders-container">
       <h2>All Orders (Admin View)</h2>
@@ -99,6 +117,8 @@ function AdminOrders() {
                   </li>
                 ))}
               </ul>
+
+              {renderProgress(order.status)}
 
               {order.status !== 'Completed' ? (
                 <button
@@ -142,7 +162,7 @@ function AdminOrders() {
                     </li>
                   ))}
                 </ul>
-                <p className="history-note">User has received their items in good state.</p>
+                <p className="history-note">{order.user.username} has received their items in good state.</p>
               </div>
             ))}
           </div>

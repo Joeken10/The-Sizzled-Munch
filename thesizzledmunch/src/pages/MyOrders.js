@@ -32,7 +32,7 @@ function MyOrders() {
       } catch (err) {
         console.error('Fetch Orders Error:', err);
         setError('Failed to fetch orders. Please try again later.');
-        toast.error('Failed to fetch orders.');  // ✅ Toast on fetch error
+        toast.error('Failed to fetch orders.');  
       } finally {
         setLoading(false);
       }
@@ -58,10 +58,10 @@ function MyOrders() {
         };
       });
 
-      toast.success(`Order #${orderId} confirmed successfully.`);  // ✅ Toast on success
+      toast.success(`Order #${orderId} confirmed successfully.`);  
     } catch (err) {
       console.error('Error confirming order:', err);
-      toast.error(err.message || 'Failed to confirm order.');  // ✅ Toast on error
+      toast.error(err.message || 'Failed to confirm order.');  
     }
   };
 

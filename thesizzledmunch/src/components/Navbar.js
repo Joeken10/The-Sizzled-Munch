@@ -26,7 +26,6 @@ function Navbar({ cartItemCount }) {
     } catch (err) {
       console.error('Logout request failed:', err);
     }
-
     setUser(null);
     navigate('/');
   };
@@ -83,14 +82,21 @@ function Navbar({ cartItemCount }) {
                   className="nav-button"
                   aria-label="Manage Menu"
                 >
-                  Menu Management
+                  Menu
                 </button>
                 <button
                   onClick={() => navigate('/admin/orders')}
                   className="nav-button"
-                  aria-label="View All Orders"
+                  aria-label="Manage Orders"
                 >
                   Orders
+                </button>
+                <button
+                  onClick={() => navigate('/admin/users')}
+                  className="nav-button"
+                  aria-label="Manage Users"
+                >
+                  Users
                 </button>
                 <button
                   onClick={() => navigate('/admin/dashboard')}
@@ -123,7 +129,7 @@ function Navbar({ cartItemCount }) {
                     className="avatar-img"
                   />
                 </Link>
-                {/* Logout button for normal users moved inside Profile page */}
+                
               </>
             )}
           </>

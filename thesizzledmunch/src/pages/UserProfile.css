@@ -160,3 +160,102 @@
     flex-direction: column;
   }
 }
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.modal-content {
+  background: linear-gradient(135deg, #2e1f12, #3e2a1b);
+  border: 2px solid #e0b878aa;
+  padding: 2rem;
+  border-radius: 18px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+  width: 90%;
+  max-width: 420px;
+  text-align: center;
+  color: #faf3e0;
+}
+
+.modal-content h2 {
+  font-family: 'Playfair Display', serif;
+  color: #e0b878;
+  margin-bottom: 1rem;
+}
+
+.modal-content p {
+  margin-bottom: 1.2rem;
+  font-family: 'Lato', sans-serif;
+}
+
+.modal-content input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  border: 1.8px solid #e0b878;
+  background-color: #faf3e0;
+  color: #2e1f12;
+  font-size: 1rem;
+  outline: none;
+  margin-bottom: 1.5rem;
+  transition: border-color 0.4s ease, box-shadow 0.4s ease;
+}
+
+.modal-content input:focus {
+  border-color: #c9884d;
+  box-shadow: 0 0 10px #c9884d80;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.confirm-button {
+  background: linear-gradient(90deg, #cc4b4b, #b83434);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.confirm-button:hover {
+  background: linear-gradient(90deg, #b83434, #9f2929);
+  transform: translateY(-2px);
+}
+
+.cancel-button {
+  background: linear-gradient(90deg, #e0b878, #c9884d);
+  color: #2e1f12;
+  border: none;
+  border-radius: 12px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.cancel-button:hover {
+  background: linear-gradient(90deg, #c9884d, #a96c3c);
+  transform: translateY(-2px);
+}
+
+@media (max-width: 420px) {
+  .modal-buttons {
+    flex-direction: column;
+  }
+}

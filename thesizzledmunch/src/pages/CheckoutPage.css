@@ -72,12 +72,13 @@
   font-size: 1rem;
   width: 100%;
   box-sizing: border-box;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .checkout-form input:focus,
 .checkout-form select:focus {
   border-color: #4caf50;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
   outline: none;
 }
 
@@ -88,19 +89,25 @@
 }
 
 .checkout-form button {
-  padding: 0.75rem 1rem;
+  padding: 0.85rem 1rem;
   background-color: #4caf50;
   color: white;
   font-weight: bold;
-  font-size: 1rem;
+  font-size: 1.05rem;
   border: none;
   border-radius: 10px;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: background-color 0.3s, opacity 0.2s;
 }
 
 .checkout-form button:hover {
   background-color: #43a047;
+}
+
+.checkout-form button:disabled {
+  background-color: #a5d6a7;
+  cursor: not-allowed;
+  opacity: 0.8;
 }
 
 .order-confirmation {
@@ -119,7 +126,23 @@
   color: #555;
 }
 
-/* Responsive */
+.success-icon {
+  margin-bottom: 1rem;
+  animation: pop 0.6s ease;
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+
 @media (max-width: 600px) {
   .checkout-page {
     padding: 1rem;
