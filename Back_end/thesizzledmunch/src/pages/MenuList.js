@@ -14,12 +14,14 @@ function MenuList({ cart, setCart }) {
   const queryParams = new URLSearchParams(location.search);
   const searchQuery = queryParams.get('search')?.toLowerCase() || '';
 
+  const API_URL = process.env.REACT_APP_API_URL;
+
   // Fetch menu items on mount
   useEffect(() => {
     setLoading(true);
     setError(null);
 
-    fetch('http://localhost:8000/menu_items', {
+    fetch(`${API_URL}/menu_items`, {
       credentials: 'include',
     })
       .then((res) => {
@@ -29,7 +31,7 @@ function MenuList({ cart, setCart }) {
       .then((data) => setMenuItems(data))
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [API_URL]);
 
   // Add to Cart with duplicate prevention
   const handleAddToCart = async (item) => {
@@ -39,7 +41,7 @@ function MenuList({ cart, setCart }) {
     }
 
     try {
-      const response = await fetch('http://localhost:8000/cart_items', {
+      const response = await fetch(`${API_URL}/cart_items`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

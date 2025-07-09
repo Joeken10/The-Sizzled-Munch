@@ -3,6 +3,7 @@ import './AuthForms.css';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../App';
 import { auth, provider, signInWithPopup } from '../firebase';
+import { toast } from 'react-toastify';
 
 function SignUp() {
   const { setUser } = useContext(AuthContext);
@@ -20,7 +21,7 @@ function SignUp() {
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const isValid = emailRegex.test(email);
-    setEmailError(isValid ? '' : 'Please enter a valid email address.');
+    setEmailError(isValid ? '' : 'Invalid email address');
     return isValid;
   };
 
@@ -35,45 +36,40 @@ function SignUp() {
     }
   };
 
-  const handlePasswordChange = (e) => {
-    const value = e.target.value;
-    setPassword(value);
-    checkPasswordStrength(value);
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (loading) return;
 
     if (!username || !email || !password || !confirmPassword) {
-      alert('Please fill in all fields.');
+      toast.error('Please fill in all fields.');
       return;
     }
 
     if (!validateEmail(email)) return;
 
     if (!checkPasswordStrength(password)) {
-      alert('Password is too weak.');
+      toast.error('Password is too weak.');
       return;
     }
 
     if (password !== confirmPassword) {
-      alert('Passwords do not match.');
+      toast.error('Passwords do not match.');
       return;
     }
 
     setLoading(true);
     try {
-      const checkRes = await fetch(`http://127.0.0.1:8000/users/check?username=${username}&email=${email}`);
-      if (!checkRes.ok) throw new Error('Failed to check existing user');
+      const normalizedEmail = email.trim().toLowerCase();
+      const checkRes = await fetch(
+        `http://127.0.0.1:8000/users/check?username=${encodeURIComponent(username)}&email=${encodeURIComponent(normalizedEmail)}`
+      );
       const checkData = await checkRes.json();
       if (checkData.exists) {
-        alert('Username or email already exists');
-        setLoading(false);
+        toast.error('Username or email already exists.');
         return;
       }
 
-      const newUser = { username, email, password };
+      const newUser = { username, email: normalizedEmail, password };
       const response = await fetch('http://127.0.0.1:8000/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -82,17 +78,19 @@ function SignUp() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        alert(errorData.error || 'Sign up failed');
-        setLoading(false);
+        toast.error(errorData.error || 'Sign up failed');
         return;
       }
 
       const createdUser = await response.json();
-      setUser(createdUser);
-      navigate('/');
+      setUser(createdUser.user);
+      localStorage.setItem('user', JSON.stringify(createdUser.user));
+
+      toast.success('Sign up successful! Please check your email for the verification code.');
+      navigate('/verify_email');
     } catch (err) {
-      alert('An error occurred during sign up');
       console.error(err);
+      toast.error('An error occurred during sign up.');
     } finally {
       setLoading(false);
     }
@@ -103,17 +101,16 @@ function SignUp() {
     setLoading(true);
     try {
       const result = await signInWithPopup(auth, provider);
-      const user = result.user;
+      const googleUser = result.user;
 
-      const res = await fetch(`http://127.0.0.1:8000/users/check?email=${user.email}`);
-      if (!res.ok) throw new Error('Failed to check existing user');
+      const res = await fetch(`http://127.0.0.1:8000/users/check?email=${encodeURIComponent(googleUser.email)}`);
       const existingUsers = await res.json();
 
       if (!existingUsers.exists) {
         const newUser = {
-          username: user.displayName || user.email.split('@')[0],
-          email: user.email,
-          password: '',  // No password for Google users
+          username: googleUser.displayName || googleUser.email.split('@')[0],
+          email: googleUser.email,
+          password: '',
         };
         await fetch('http://127.0.0.1:8000/signup', {
           method: 'POST',
@@ -122,33 +119,30 @@ function SignUp() {
         });
       }
 
-      // Optionally, fetch full user profile from backend after signup:
-      const profileRes = await fetch(`http://127.0.0.1:8000/users/profile?email=${user.email}`);
-      if (profileRes.ok) {
-        const userProfile = await profileRes.json();
-        setUser(userProfile);
-      } else {
-        setUser({ username: user.displayName, email: user.email });
-      }
+      const profileRes = await fetch(`http://127.0.0.1:8000/users/profile?email=${encodeURIComponent(googleUser.email)}`);
+      const userProfile = await profileRes.json();
+      setUser(userProfile);
+      localStorage.setItem('user', JSON.stringify(userProfile));
 
       navigate('/');
     } catch (error) {
-      alert("Google sign-in failed");
-      console.error("Google sign-in error:", error.message);
+      console.error('Google sign-in error:', error);
+      toast.error('Google sign-in failed.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="signup-container">
+    <div className="signup-container" aria-label="Sign up form">
       <h2>Sign Up</h2>
       <form onSubmit={handleSubmit} noValidate>
         <input
           type="text"
           placeholder="Username"
           value={username}
-          onChange={e => setUsername(e.target.value)}
+          onChange={(e) => setUsername(e.target.value)}
+          aria-label="Username"
           required
         />
 
@@ -156,8 +150,9 @@ function SignUp() {
           type="email"
           placeholder="Email"
           value={email}
-          onChange={e => setEmail(e.target.value)}
+          onChange={(e) => setEmail(e.target.value)}
           onBlur={() => validateEmail(email)}
+          aria-label="Email address"
           required
         />
         {emailError && <p style={{ color: 'red' }}>{emailError}</p>}
@@ -167,20 +162,24 @@ function SignUp() {
             type={showPassword ? 'text' : 'password'}
             placeholder="Password"
             value={password}
-            onChange={handlePasswordChange}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              checkPasswordStrength(e.target.value);
+            }}
+            aria-label="Password"
             required
           />
           <span
+            onClick={() => setShowPassword((prev) => !prev)}
             className="toggle-password"
-            onClick={() => setShowPassword(prev => !prev)}
             style={{ cursor: 'pointer' }}
+            aria-label="Toggle password visibility"
           >
             {showPassword ? '🙈' : '👁️'}
           </span>
         </div>
-
         <small>
-          Password must be at least 8 characters long and include a number, a special character, and both uppercase and lowercase letters.
+          Password must have at least 8 characters, including numbers, symbols, uppercase and lowercase letters.
         </small>
         {password && (
           <p style={{ color: passwordStrength === 'Strong' ? 'green' : 'red' }}>
@@ -193,30 +192,39 @@ function SignUp() {
             type={showConfirmPassword ? 'text' : 'password'}
             placeholder="Confirm Password"
             value={confirmPassword}
-            onChange={e => setConfirmPassword(e.target.value)}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            aria-label="Confirm password"
             required
           />
           <span
+            onClick={() => setShowConfirmPassword((prev) => !prev)}
             className="toggle-password"
-            onClick={() => setShowConfirmPassword(prev => !prev)}
             style={{ cursor: 'pointer' }}
+            aria-label="Toggle confirm password visibility"
           >
             {showConfirmPassword ? '🙈' : '👁️'}
           </span>
         </div>
 
-        <button type="submit" disabled={loading}>
+        <button type="submit" disabled={loading} aria-label="Sign up">
           {loading ? 'Signing Up...' : 'Sign Up'}
         </button>
       </form>
 
       <div className="or-divider">OR</div>
 
-      <button onClick={handleGoogleSignUp} className="google-button" disabled={loading}>
+      <button
+        onClick={handleGoogleSignUp}
+        className="google-button"
+        disabled={loading}
+        aria-label="Sign up with Google"
+      >
         {loading ? 'Loading...' : 'Sign Up with Google'}
       </button>
 
-      <p>Already have an account? <Link to="/signin">Sign In here</Link></p>
+      <p>
+        Already have an account? <Link to="/signin">Sign In here</Link>
+      </p>
     </div>
   );
 }

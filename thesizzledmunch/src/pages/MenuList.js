@@ -16,7 +16,7 @@ function MenuList({ cart, setCart }) {
 
   const API_URL = process.env.REACT_APP_API_URL;
 
-  // Fetch menu items on mount
+
   useEffect(() => {
     setLoading(true);
     setError(null);
@@ -33,7 +33,7 @@ function MenuList({ cart, setCart }) {
       .finally(() => setLoading(false));
   }, [API_URL]);
 
-  // Add to Cart with duplicate prevention
+ 
   const handleAddToCart = async (item) => {
     if (!user?.id) {
       alert('You must be logged in to add items to cart.');
@@ -63,14 +63,14 @@ function MenuList({ cart, setCart }) {
         );
 
         if (existing) {
-          // Update quantity of existing item
+          
           return prevCart.map((cartItem) =>
             cartItem.menu_item_id === newItem.menu_item_id
               ? { ...cartItem, quantity: cartItem.quantity + 1 }
               : cartItem
           );
         } else {
-          // Add new item to cart
+        
           return [...prevCart, { ...newItem, ...item, quantity: 1 }];
         }
       });
@@ -80,7 +80,7 @@ function MenuList({ cart, setCart }) {
     }
   };
 
-  // Filter items by search query
+
   const filteredItems = menuItems.filter((item) =>
     item.item_name.toLowerCase().includes(searchQuery)
   );

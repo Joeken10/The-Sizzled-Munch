@@ -158,3 +158,12 @@ small {
   background-color: #3367d6;
   transform: translateY(-1px);
 }
+.error-message {
+  color: red;
+  margin-bottom: 10px;
+}
+
+.success-message {
+  color: green;
+  margin-bottom: 10px;
+}

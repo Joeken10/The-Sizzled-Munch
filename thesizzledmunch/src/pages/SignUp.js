@@ -18,6 +18,8 @@ function SignUp() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  const API_URL = process.env.REACT_APP_API_URL;
+
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const isValid = emailRegex.test(email);
@@ -61,7 +63,7 @@ function SignUp() {
     try {
       const normalizedEmail = email.trim().toLowerCase();
       const checkRes = await fetch(
-        `http://127.0.0.1:8000/users/check?username=${encodeURIComponent(username)}&email=${encodeURIComponent(normalizedEmail)}`
+        `${API_URL}/users/check?username=${encodeURIComponent(username)}&email=${encodeURIComponent(normalizedEmail)}`
       );
       const checkData = await checkRes.json();
       if (checkData.exists) {
@@ -70,7 +72,7 @@ function SignUp() {
       }
 
       const newUser = { username, email: normalizedEmail, password };
-      const response = await fetch('http://127.0.0.1:8000/signup', {
+      const response = await fetch(`${API_URL}/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newUser),
@@ -103,7 +105,7 @@ function SignUp() {
       const result = await signInWithPopup(auth, provider);
       const googleUser = result.user;
 
-      const res = await fetch(`http://127.0.0.1:8000/users/check?email=${encodeURIComponent(googleUser.email)}`);
+      const res = await fetch(`${API_URL}/users/check?email=${encodeURIComponent(googleUser.email)}`);
       const existingUsers = await res.json();
 
       if (!existingUsers.exists) {
@@ -112,14 +114,14 @@ function SignUp() {
           email: googleUser.email,
           password: '',
         };
-        await fetch('http://127.0.0.1:8000/signup', {
+        await fetch(`${API_URL}/signup`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(newUser),
         });
       }
 
-      const profileRes = await fetch(`http://127.0.0.1:8000/users/profile?email=${encodeURIComponent(googleUser.email)}`);
+      const profileRes = await fetch(`${API_URL}/users/profile?email=${encodeURIComponent(googleUser.email)}`);
       const userProfile = await profileRes.json();
       setUser(userProfile);
       localStorage.setItem('user', JSON.stringify(userProfile));

@@ -16,25 +16,26 @@ import base64
 from models import db, User, AdminUser, MenuItem, CartItem, CartSummary, Order, OrderItem, MpesaPayment
 from serializer import serialize_user, serialize_admin, serialize_menu_item, serialize_cart_item
 
-
 load_dotenv()
 
 app = Flask(__name__)
 
+# SECRET KEY is REQUIRED for sessions
+app.secret_key = os.getenv('SECRET_KEY', 'default-unsafe-key')  # Replace in .env for production
 
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+db_uri = os.getenv('DATABASE_URL')
+if db_uri and db_uri.startswith('postgres://'):
+    db_uri = db_uri.replace('postgres://', 'postgresql://', 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-
-
+# Mail Config
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
 app.config['MAIL_USE_SSL'] = True
 app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
-
 
 mail = Mail(app)
 db.init_app(app)
