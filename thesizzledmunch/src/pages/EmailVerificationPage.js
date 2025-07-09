@@ -12,19 +12,28 @@ const EmailVerificationPage = () => {
   const [error, setError] = useState('');
   const [resendMessage, setResendMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
-  
+  const API_BASE = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+
   useEffect(() => {
     if (email) {
       document.getElementById('verification-code')?.focus();
     }
   }, [email]);
 
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
+
   const handleVerify = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/verify_email', {
+      const res = await fetch(`${API_BASE}/verify_email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, verification_code: code }),
@@ -34,8 +43,6 @@ const EmailVerificationPage = () => {
       if (res.ok) {
         setMessage(data.message);
         setError('');
-
-        
         setTimeout(() => {
           setUser(null);
           localStorage.removeItem('user');
@@ -56,7 +63,7 @@ const EmailVerificationPage = () => {
     if (!email) return;
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/resend_verification', {
+      const res = await fetch(`${API_BASE}/resend_verification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
@@ -65,6 +72,7 @@ const EmailVerificationPage = () => {
       const data = await res.json();
       if (res.ok) {
         setResendMessage(data.message);
+        setResendCooldown(30); // 30 seconds cooldown
       } else {
         throw new Error(data.error || 'Failed to resend verification code.');
       }
@@ -104,10 +112,16 @@ const EmailVerificationPage = () => {
 
       <button
         onClick={handleResendCode}
-        style={styles.resendButton}
-        disabled={loading || !email || resendMessage}
+        style={{
+          ...styles.resendButton,
+          backgroundColor: resendCooldown > 0 ? '#ccc' : '#28a745',
+          cursor: resendCooldown > 0 ? 'not-allowed' : 'pointer',
+        }}
+        disabled={loading || !email || resendCooldown > 0}
       >
-        {loading ? 'Sending...' : 'Resend Verification Code'}
+        {resendCooldown > 0
+          ? `Resend in ${resendCooldown}s`
+          : 'Resend Verification Code'}
       </button>
 
       {resendMessage && <p style={styles.info}>{resendMessage}</p>}
@@ -149,12 +163,10 @@ const styles = {
   resendButton: {
     marginTop: '10px',
     padding: '10px',
-    backgroundColor: '#28a745',
-    color: '#fff',
     fontWeight: 'bold',
     border: 'none',
     borderRadius: '5px',
-    cursor: 'pointer',
+    color: '#fff',
   },
   success: { color: 'green', marginTop: '15px' },
   error: { color: 'red', marginTop: '15px' },
