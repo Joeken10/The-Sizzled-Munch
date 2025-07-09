@@ -10,7 +10,7 @@ function LandingPage() {
           backgroundImage: `linear-gradient(
             rgba(59, 46, 15, 0.8),
             rgba(59, 46, 15, 0.8)
-          ), url('/landing_page_images/2photo.jpeg')`,
+          ), url('/landing-page-images/2photo.jpeg')`,
         }}
       >
         <div className="hero-content">
