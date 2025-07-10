@@ -80,6 +80,7 @@ function SignIn() {
         navigate(data.isAdmin ? '/admin/menu' : '/');
       } else {
         setError(data.error || 'Invalid username/email or password.');
+        setPassword('');  // Clear password on failure
       }
     } catch (err) {
       console.error('SignIn error:', err);
