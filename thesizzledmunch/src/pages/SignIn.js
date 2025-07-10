@@ -16,7 +16,7 @@ function SignIn() {
   const location = useLocation();
   const verified = new URLSearchParams(location.search).get('verified');
 
-  const API_URL = process.env.REACT_APP_API_URL || 'https://the-sizzled-munch.onrender.com';
+  const API_URL = 'https://the-sizzled-munch.onrender.com'; // Static, safe for production
 
   const apiFetch = (url, options = {}) =>
     fetch(`${API_URL}${url}`, {
@@ -24,11 +24,25 @@ function SignIn() {
       ...options,
     });
 
+  // Auto-redirect logged-in users
   useEffect(() => {
     if (user) {
       navigate(user.isAdmin ? '/admin/menu' : '/');
+    } else {
+      // Auto-fill from localStorage if needed
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          setUser(parsedUser);
+          navigate(parsedUser.isAdmin ? '/admin/menu' : '/');
+        } catch (err) {
+          console.error('Failed to parse stored user:', err);
+          localStorage.removeItem('user');
+        }
+      }
     }
-  }, [user, navigate]);
+  }, [user, navigate, setUser]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -48,10 +62,7 @@ function SignIn() {
       const response = await apiFetch('/signin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          identifier: trimmedIdentifier,
-          password: trimmedPassword,
-        }),
+        body: JSON.stringify({ identifier: trimmedIdentifier, password: trimmedPassword }),
       });
 
       let data;
@@ -80,7 +91,7 @@ function SignIn() {
         navigate(data.isAdmin ? '/admin/menu' : '/');
       } else {
         setError(data.error || 'Invalid username/email or password.');
-        setPassword('');  // Clear password on failure
+        setPassword('');  // Clear password on failed login
       }
     } catch (err) {
       console.error('SignIn error:', err);
