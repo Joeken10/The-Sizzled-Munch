@@ -38,7 +38,7 @@ class User(db.Model):
     @password.setter
     def password(self, password):
         """Hashes and sets the password."""
-        self.password_hash = generate_password_hash(password, method='scrypt')
+        self.password_hash = generate_password_hash(password)  # ✅ Default hashing method (pbkdf2:sha256)
 
     def check_password(self, password):
         """Verify password against hash."""
@@ -64,7 +64,7 @@ class AdminUser(db.Model):
     @password.setter
     def password(self, password):
         """Hashes and sets the password."""
-        self.password_hash = generate_password_hash(password, method='scrypt')
+        self.password_hash = generate_password_hash(password)  # ✅ Default hashing method
 
     def check_password(self, password):
         """Verify password against hash."""
@@ -165,13 +165,13 @@ class MpesaPayment(db.Model):
         return f"<MpesaPayment {self.phone_number} - {self.amount}>"
 
 
-
 def normalize_fields(mapper, connection, target):
     """Normalize email & username to lowercase & strip spaces before insert/update."""
     if target.email:
         target.email = target.email.strip().lower()
     if hasattr(target, 'username') and target.username:
         target.username = target.username.strip().lower()
+
 
 for model in [User, AdminUser]:
     event.listen(model, 'before_insert', normalize_fields)
