@@ -13,18 +13,22 @@ from time import sleep
 from models import db, User, AdminUser, MenuItem, CartItem, CartSummary, Order, OrderItem, MpesaPayment
 from serializer import serialize_user, serialize_admin, serialize_menu_item, serialize_cart_item
 
+
 load_dotenv()
 
 app = Flask(__name__)
 
+
 from werkzeug.middleware.proxy_fix import ProxyFix
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
+
 app.secret_key = os.getenv('SECRET_KEY', 'default-unsafe-key')
+
 
 db_uri = os.getenv('DATABASE_URL')
 if db_uri and db_uri.startswith('postgres://'):
-    db_uri = db_uri.replace('postgres://', 'postgresql://', 1)
+    db_uri = db_uri.replace('postgres://', 'postgresql://', 1)  
 
 app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -32,24 +36,28 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'None'
 app.config['SESSION_COOKIE_SECURE'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 
+# Mail configuration
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
 app.config['MAIL_USE_SSL'] = True
 app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
 
+# Initialize extensions
 mail = Mail(app)
 db.init_app(app)
 migrate = Migrate(app, db)
 
-CORS(app, supports_credentials=True, origins=[
-    "https://the-sizzled-munch-2397.vercel.app",
-    "http://localhost:3000"
-])
+
+cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000")
+CORS(app, supports_credentials=True, origins=[origin.strip() for origin in cors_origins.split(',')])
+
+
 
 @app.before_request
 def log_request():
     current_app.logger.info(f"[{datetime.utcnow().isoformat()}] {request.method} {request.path} | Data: {request.get_json(silent=True)}")
+
 
 @app.after_request
 def set_security_headers(response):
