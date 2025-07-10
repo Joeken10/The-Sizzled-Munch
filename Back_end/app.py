@@ -349,7 +349,6 @@ def signup():
         'user': serialize_user(user)
     }), 201
 
-
 @app.route('/signin', methods=['POST'])
 def signin():
     if not request.is_json:
@@ -362,36 +361,48 @@ def signin():
     if not identifier or not password:
         return jsonify({'error': 'Missing username/email and password.'}), 400
 
-    # Case-insensitive search inside DB query
+
+    normalized_identifier = identifier.lower()
+
+   
     admin = AdminUser.query.filter(
-        (func.lower(AdminUser.username) == func.lower(identifier)) |
-        (func.lower(AdminUser.email) == func.lower(identifier))
+        (func.lower(AdminUser.username) == normalized_identifier) |
+        (func.lower(AdminUser.email) == normalized_identifier)
     ).first()
 
-    if admin and admin.check_password(password):
-        set_session_user(admin.id, is_admin=True)
-        admin.is_online = True
-        admin.last_login_at = datetime.utcnow()
-        db.session.commit()
-        current_app.logger.info(f"[LOGIN] Admin logged in: {identifier}")
-        return jsonify(serialize_admin(admin)), 200
+    if admin:
+        if admin.check_password(password):
+            set_session_user(admin.id, is_admin=True)
+            admin.is_online = True
+            admin.last_login_at = datetime.utcnow()
+            db.session.commit()
+            current_app.logger.info(f"[LOGIN SUCCESS] Admin logged in: {identifier}")
+            return jsonify(serialize_admin(admin)), 200
+        else:
+            current_app.logger.warning(f"[LOGIN FAILED] Wrong password for admin: {identifier}")
 
+    
     user = User.query.filter(
-        (func.lower(User.username) == func.lower(identifier)) |
-        (func.lower(User.email) == func.lower(identifier))
+        (func.lower(User.username) == normalized_identifier) |
+        (func.lower(User.email) == normalized_identifier)
     ).first()
 
-    if user and user.check_password(password):
-        set_session_user(user.id, is_admin=False)
-        user.is_online = True
-        user.last_login_at = datetime.utcnow()
-        db.session.commit()
-        current_app.logger.info(f"[LOGIN] User logged in: {identifier}")
-        return jsonify(serialize_user(user)), 200
+    if user:
+        if user.check_password(password):
+            set_session_user(user.id, is_admin=False)
+            user.is_online = True
+            user.last_login_at = datetime.utcnow()
+            db.session.commit()
+            current_app.logger.info(f"[LOGIN SUCCESS] User logged in: {identifier}")
+            return jsonify(serialize_user(user)), 200
+        else:
+            current_app.logger.warning(f"[LOGIN FAILED] Wrong password for user: {identifier}")
 
-    sleep(0.3)  # Slow down brute-force attempts
-    current_app.logger.warning(f"[FAILED LOGIN] Identifier: {identifier}")
+    
+    sleep(0.3)
+    current_app.logger.warning(f"[LOGIN FAILED] Invalid identifier or password: {identifier}")
     return jsonify({'error': 'Invalid username/email or password.'}), 401
+
 
 
 
