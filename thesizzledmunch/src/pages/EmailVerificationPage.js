@@ -2,7 +2,10 @@ import React, { useState, useContext, useEffect } from 'react';
 import { AuthContext } from '../App';
 import { useNavigate } from 'react-router-dom';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const API_URL = process.env.REACT_APP_API_URL || 'https://the-sizzled-munch.onrender.com';
+
+const apiFetch = (url, options = {}) =>
+  fetch(`${API_URL}${url}`, { credentials: 'include', ...options });
 
 const EmailVerificationPage = () => {
   const { user, setUser } = useContext(AuthContext);
@@ -32,7 +35,7 @@ const EmailVerificationPage = () => {
     e.preventDefault();
     setLoadingVerify(true);
     try {
-      const res = await fetch(`${API_URL}/verify_email`, {
+      const res = await apiFetch('/verify_email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, verification_code: code }),
@@ -50,6 +53,7 @@ const EmailVerificationPage = () => {
         setError(data.error || 'Verification failed');
       }
     } catch (err) {
+      console.error(err);
       setError('Something went wrong.');
     } finally {
       setLoadingVerify(false);
@@ -60,7 +64,7 @@ const EmailVerificationPage = () => {
     if (!email) return;
     setLoadingResend(true);
     try {
-      const res = await fetch(`${API_URL}/resend_verification`, {
+      const res = await apiFetch('/resend_verification', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
@@ -73,6 +77,7 @@ const EmailVerificationPage = () => {
         setResendMessage(data.error || 'Failed to resend code.');
       }
     } catch (err) {
+      console.error(err);
       setResendMessage('Something went wrong.');
     } finally {
       setLoadingResend(false);
