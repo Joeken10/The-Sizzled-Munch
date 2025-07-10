@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, session, current_app
+from flask import Flask, request, jsonify, session, current_app, make_response
 from flask_migrate import Migrate
 from flask_cors import CORS
 from flask_mail import Mail, Message
@@ -366,7 +366,6 @@ Sizzled Munch, 00100, Nairobi, Kaunda Street.
 def signin():
     data = request.get_json()
 
-    
     identifier = (
         data.get('identifier')
         or data.get('username')
@@ -377,7 +376,6 @@ def signin():
     if not identifier or not password:
         return jsonify({'error': 'Missing identifier/email/username or password'}), 400
 
-  
     admin = AdminUser.query.filter(
         (AdminUser.username == identifier) | (AdminUser.email == identifier)
     ).first()
@@ -387,9 +385,9 @@ def signin():
         admin.is_online = True
         admin.last_login_at = datetime.utcnow()
         db.session.commit()
-        return jsonify(serialize_admin(admin)), 200
+        resp = make_response(jsonify(serialize_admin(admin)), 200)
+        return resp
 
-    
     user = User.query.filter(
         (User.username == identifier) | (User.email == identifier)
     ).first()
@@ -399,14 +397,13 @@ def signin():
         user.is_online = True
         user.last_login_at = datetime.utcnow()
         db.session.commit()
-        return jsonify(serialize_user(user)), 200
+        resp = make_response(jsonify(serialize_user(user)), 200)
+        return resp
 
-    
     current_app.logger.warning(
         f"Failed login attempt with identifier: {identifier}"
     )
     return jsonify({'error': 'Invalid username/email or password'}), 401
-
 
 
 @app.route('/logout', methods=['POST'])
