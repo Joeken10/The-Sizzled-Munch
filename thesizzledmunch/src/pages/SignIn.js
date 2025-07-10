@@ -56,7 +56,7 @@ function SignIn() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const trimmedIdentifier = identifier.trim().toLowerCase();
+    const trimmedIdentifier = identifier.trim();
     const trimmedPassword = password.trim();
 
     if (!trimmedIdentifier || !trimmedPassword) {
@@ -106,6 +106,7 @@ function SignIn() {
         setPassword('');
       }
     } catch (err) {
+      console.error('Network error:', err);
       setError('Network error. Please try again later.');
     } finally {
       setLoading(false);
