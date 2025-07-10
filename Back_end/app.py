@@ -353,6 +353,7 @@ def signup():
         'user': serialize_user(user)
     }), 201
 
+
 @app.route('/signin', methods=['POST'])
 def signin():
     if not request.is_json:
@@ -362,17 +363,23 @@ def signin():
     identifier = (data.get('identifier') or '').strip().lower()
     password = data.get('password')
 
+    current_app.logger.info(f"[SIGNIN PAYLOAD] Identifier received: '{identifier}'")
+
     if not identifier or not password:
+        current_app.logger.warning("[SIGNIN FAILED] Missing credentials.")
         return jsonify({'error': 'Missing username/email and password.'}), 400
 
-   
+    # Try admin login first
     admin = AdminUser.query.filter(
         (func.lower(AdminUser.username) == identifier) |
         (func.lower(AdminUser.email) == identifier)
     ).first()
 
     if admin:
-        if admin.check_password(password):
+        password_check = admin.check_password(password)
+        current_app.logger.info(f"[ADMIN PASSWORD CHECK] Success: {password_check}")
+
+        if password_check:
             set_session_user(admin.id, is_admin=True)
             admin.is_online = True
             admin.last_login_at = datetime.utcnow()
@@ -381,17 +388,20 @@ def signin():
             return jsonify(serialize_admin(admin)), 200
         else:
             current_app.logger.warning(f"[LOGIN FAILED] Wrong password for admin: {identifier}")
-            sleep(0.3)  
+            sleep(0.3)  # Delay for security
             return jsonify({'error': 'Invalid username/email or password.'}), 401
 
-    
+    # Try normal user login
     user = User.query.filter(
         (func.lower(User.username) == identifier) |
         (func.lower(User.email) == identifier)
     ).first()
 
     if user:
-        if user.check_password(password):
+        password_check = user.check_password(password)
+        current_app.logger.info(f"[USER PASSWORD CHECK] Success: {password_check}")
+
+        if password_check:
             set_session_user(user.id, is_admin=False)
             user.is_online = True
             user.last_login_at = datetime.utcnow()
@@ -403,17 +413,16 @@ def signin():
             sleep(0.3)
             return jsonify({'error': 'Invalid username/email or password.'}), 401
 
-   
     current_app.logger.warning(f"[LOGIN FAILED] No user found with identifier: {identifier}")
     sleep(0.3)
     return jsonify({'error': 'Invalid username/email or password.'}), 401
-
 
 
 @app.route('/current_user', methods=['GET'])
 def current_user():
     user_id = session.get('user_id')
     is_admin_flag = session.get('is_admin')
+
     if not user_id:
         return jsonify({'user': None}), 200
 
@@ -426,10 +435,9 @@ def current_user():
         if user:
             return jsonify({'user': serialize_user(user)}), 200
 
-   
+    # Clear session if user/admin no longer exists
     session.clear()
     return jsonify({'user': None}), 200
-
 
 
 @app.route('/logout', methods=['POST'])
