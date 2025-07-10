@@ -45,9 +45,9 @@ function EmailVerificationPage() {
       if (res.ok) {
         setMessage(data.message || 'Email verified successfully!');
         setTimeout(() => {
-          setUser(null); // Clear user context after verification
-          localStorage.removeItem('user'); // Clear localStorage user
-          navigate('/signin?verified=1'); // Redirect to signin with verified query
+          setUser(null); 
+          localStorage.removeItem('user'); 
+          navigate('/signin?verified=1'); 
         }, 2000);
       } else {
         if (data.error?.toLowerCase().includes('expired')) {
