@@ -25,15 +25,11 @@ function EmailVerificationPage() {
     }
   }, [email]);
 
-  useEffect(() => {
-    setMessage('');
-    setError('');
-    setResendMessage('');
-  }, [email, code]);
-
   const handleVerify = async (e) => {
     e.preventDefault();
     setLoadingVerify(true);
+    setError('');
+    setMessage('');
     try {
       const res = await apiFetch('/verify_email', {
         method: 'POST',
@@ -49,7 +45,12 @@ function EmailVerificationPage() {
           navigate('/signin?verified=1');
         }, 2000);
       } else {
-        setError(data.error || 'Verification failed.');
+        if (data.error?.includes('expired')) {
+          setError('Code expired. Sending a new code...');
+          await handleResendCode(true);
+        } else {
+          setError(data.error || 'Verification failed.');
+        }
       }
     } catch (err) {
       console.error(err);
@@ -59,7 +60,7 @@ function EmailVerificationPage() {
     }
   };
 
-  const handleResendCode = async () => {
+  const handleResendCode = async (silent = false) => {
     if (!email) return;
     setLoadingResend(true);
     try {
@@ -70,13 +71,13 @@ function EmailVerificationPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        setResendMessage(data.message);
+        if (!silent) setResendMessage(data.message);
       } else {
-        setResendMessage(data.error || 'Failed to resend code.');
+        if (!silent) setResendMessage(data.error || 'Failed to resend code.');
       }
     } catch (err) {
       console.error(err);
-      setResendMessage('Something went wrong.');
+      if (!silent) setResendMessage('Something went wrong.');
     } finally {
       setLoadingResend(false);
     }
@@ -114,7 +115,7 @@ function EmailVerificationPage() {
       </form>
 
       <button
-        onClick={handleResendCode}
+        onClick={() => handleResendCode(false)}
         style={styles.resendButton}
         disabled={loadingVerify || loadingResend || !email}
       >
