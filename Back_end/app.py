@@ -356,18 +356,18 @@ def signin():
         return jsonify({'error': 'Invalid Content-Type; must be JSON'}), 400
 
     data = request.get_json() or {}
-    
-    identifier = (data.get('identifier') or data.get('username') or data.get('email') or '').strip().lower()
+    identifier = (data.get('identifier') or '').strip()
     password = data.get('password')
 
     if not identifier or not password:
         return jsonify({'error': 'Missing username/email and password.'}), 400
 
-    
+    # Lower BOTH sides inside DB query
     admin = AdminUser.query.filter(
-        (func.lower(AdminUser.username) == identifier) |
-        (func.lower(AdminUser.email) == identifier)
+        (func.lower(AdminUser.username) == func.lower(identifier)) |
+        (func.lower(AdminUser.email) == func.lower(identifier))
     ).first()
+
     if admin and admin.check_password(password):
         set_session_user(admin.id, is_admin=True)
         admin.is_online = True
@@ -376,11 +376,11 @@ def signin():
         current_app.logger.info(f"[LOGIN] Admin logged in: {identifier}")
         return jsonify(serialize_admin(admin)), 200
 
-    
     user = User.query.filter(
-        (func.lower(User.username) == identifier) |
-        (func.lower(User.email) == identifier)
+        (func.lower(User.username) == func.lower(identifier)) |
+        (func.lower(User.email) == func.lower(identifier))
     ).first()
+
     if user and user.check_password(password):
         set_session_user(user.id, is_admin=False)
         user.is_online = True
@@ -389,10 +389,10 @@ def signin():
         current_app.logger.info(f"[LOGIN] User logged in: {identifier}")
         return jsonify(serialize_user(user)), 200
 
-    
     sleep(0.3)
     current_app.logger.warning(f"[FAILED LOGIN] Identifier: {identifier}")
     return jsonify({'error': 'Invalid username/email or password.'}), 401
+
 
 
 
