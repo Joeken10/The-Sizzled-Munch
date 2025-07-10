@@ -166,11 +166,13 @@ class MpesaPayment(db.Model):
 
 
 
-def normalize_email(mapper, connection, target):
+def normalize_fields(mapper, connection, target):
+    """Normalize email & username to lowercase & strip spaces before insert/update."""
     if target.email:
         target.email = target.email.strip().lower()
-
+    if hasattr(target, 'username') and target.username:
+        target.username = target.username.strip().lower()
 
 for model in [User, AdminUser]:
-    event.listen(model, 'before_insert', normalize_email)
-    event.listen(model, 'before_update', normalize_email)
+    event.listen(model, 'before_insert', normalize_fields)
+    event.listen(model, 'before_update', normalize_fields)

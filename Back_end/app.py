@@ -311,7 +311,7 @@ def set_session_user(user_id, is_admin=False):
 @app.route('/signup', methods=['POST'])
 def signup():
     data = request.get_json() or {}
-    username = (data.get('username') or '').strip()
+    username = (data.get('username') or '').strip().lower()  # Force lowercase
     email = (data.get('email') or '').strip().lower()
     password = data.get('password')
     is_google = bool(data.get('is_google', False))
@@ -342,13 +342,11 @@ def signup():
         verification_code=verification_code,
         verification_code_sent_at=datetime.utcnow()
     )
-    user.password = password 
+    user.password = password
     db.session.add(user)
     db.session.commit()
 
-
     send_verification_email(email, request.remote_addr or 'unknown')
-
     set_session_user(user.id, False)
 
     current_app.logger.info(f"User signed up and verification email sent: {username}")
@@ -357,6 +355,8 @@ def signup():
         'message': 'User registered. Verification email sent.',
         'user': serialize_user(user)
     }), 201
+
+
 
 @app.route('/signin', methods=['POST'])
 def signin():
