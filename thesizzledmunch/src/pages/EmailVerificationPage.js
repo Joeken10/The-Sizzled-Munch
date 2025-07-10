@@ -2,12 +2,12 @@ import React, { useState, useContext, useEffect } from 'react';
 import { AuthContext } from '../App';
 import { useNavigate } from 'react-router-dom';
 
-const API_URL = process.env.REACT_APP_API_URL || 'https://the-sizzled-munch.onrender.com';
+const API_URL = process.env.REACT_APP_API_URL;
 
 const apiFetch = (url, options = {}) =>
   fetch(`${API_URL}${url}`, { credentials: 'include', ...options });
 
-const EmailVerificationPage = () => {
+function EmailVerificationPage() {
   const { user, setUser } = useContext(AuthContext);
   const navigate = useNavigate();
 
@@ -29,7 +29,7 @@ const EmailVerificationPage = () => {
     setMessage('');
     setError('');
     setResendMessage('');
-  }, [code, email]);
+  }, [email, code]);
 
   const handleVerify = async (e) => {
     e.preventDefault();
@@ -38,9 +38,8 @@ const EmailVerificationPage = () => {
       const res = await apiFetch('/verify_email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, verification_code: code }),
+        body: JSON.stringify({ email: email.trim().toLowerCase(), verification_code: code }),
       });
-
       const data = await res.json();
       if (res.ok) {
         setMessage(data.message);
@@ -50,7 +49,7 @@ const EmailVerificationPage = () => {
           navigate('/signin?verified=1');
         }, 2000);
       } else {
-        setError(data.error || 'Verification failed');
+        setError(data.error || 'Verification failed.');
       }
     } catch (err) {
       console.error(err);
@@ -67,9 +66,8 @@ const EmailVerificationPage = () => {
       const res = await apiFetch('/resend_verification', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
       });
-
       const data = await res.json();
       if (res.ok) {
         setResendMessage(data.message);
@@ -118,7 +116,7 @@ const EmailVerificationPage = () => {
       <button
         onClick={handleResendCode}
         style={styles.resendButton}
-        disabled={loadingVerify || loadingResend || !email || resendMessage}
+        disabled={loadingVerify || loadingResend || !email}
       >
         {loadingResend ? 'Sending...' : 'Resend Verification Code'}
       </button>
@@ -128,7 +126,7 @@ const EmailVerificationPage = () => {
       {error && <p style={styles.error}>{error}</p>}
     </div>
   );
-};
+}
 
 const styles = {
   container: {
