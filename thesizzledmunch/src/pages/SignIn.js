@@ -18,13 +18,19 @@ function SignIn() {
 
   const API_URL = 'https://the-sizzled-munch.onrender.com';
 
-  const apiFetch = (url, options = {}) =>
-    fetch(`${API_URL}${url}`, {
-      credentials: 'include',
-      ...options,
-    });
+  const apiFetch = async (url, options = {}) => {
+    try {
+      const response = await fetch(`${API_URL}${url}`, {
+        credentials: 'include',
+        ...options,
+      });
+      return response;
+    } catch (err) {
+      console.error(`Network error during ${url}:`, err);
+      throw err;
+    }
+  };
 
-  // Auto-redirect logged-in users & load from localStorage
   useEffect(() => {
     if (user) {
       navigate(user.isAdmin ? '/admin/menu' : '/');
@@ -43,7 +49,6 @@ function SignIn() {
     }
   }, [user, navigate, setUser]);
 
-  // Auto-focus on page load
   useEffect(() => {
     document.querySelector('input[aria-label="Username or Email"]')?.focus();
   }, []);
@@ -66,10 +71,13 @@ function SignIn() {
       const response = await apiFetch('/signin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier: trimmedIdentifier, password: trimmedPassword }),
+        body: JSON.stringify({
+          identifier: trimmedIdentifier,
+          password: trimmedPassword,
+        }),
       });
 
-      let data = null;
+      let data;
       try {
         data = await response.json();
       } catch (jsonError) {
@@ -98,7 +106,6 @@ function SignIn() {
         setPassword('');
       }
     } catch (err) {
-      console.error('SignIn error:', err);
       setError('Network error. Please try again later.');
     } finally {
       setLoading(false);
@@ -126,6 +133,7 @@ function SignIn() {
           type="text"
           placeholder="Username or Email"
           aria-label="Username or Email"
+          autoComplete="username"
           value={identifier}
           onChange={(e) => setIdentifier(e.target.value)}
           required
@@ -136,6 +144,7 @@ function SignIn() {
             type={showPassword ? 'text' : 'password'}
             placeholder="Password"
             aria-label="Password"
+            autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
