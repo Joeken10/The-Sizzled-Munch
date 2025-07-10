@@ -17,10 +17,9 @@ load_dotenv()
 app = Flask(__name__)
 
 from werkzeug.middleware.proxy_fix import ProxyFix
-app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1) 
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
-app.secret_key = os.getenv('SECRET_KEY', 'default-unsafe-key')  
-
+app.secret_key = os.getenv('SECRET_KEY', 'default-unsafe-key')
 
 db_uri = os.getenv('DATABASE_URL')
 if db_uri and db_uri.startswith('postgres://'):
@@ -29,11 +28,12 @@ if db_uri and db_uri.startswith('postgres://'):
 app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# Session cookie security
+app.config['SESSION_COOKIE_SAMESITE'] = 'None'
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)  # Session lifetime
 
-app.config['SESSION_COOKIE_SAMESITE'] = 'None'  
-app.config['SESSION_COOKIE_SECURE'] = True      
-
-# ✅ Mail Config
+# Mail Config
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
 app.config['MAIL_USE_SSL'] = True
@@ -44,29 +44,37 @@ mail = Mail(app)
 db.init_app(app)
 migrate = Migrate(app, db)
 
-
 CORS(app, supports_credentials=True, origins=[
-    "https://the-sizzled-munch-2397.vercel.app",  
-    "http://localhost:3000"                       
+    "https://the-sizzled-munch-2397.vercel.app",
+    "http://localhost:3000"
 ])
-
-
-def generate_reset_token(email):
-    serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
-    return serializer.dumps(email, salt='password-reset-salt')
-
-def verify_reset_token(token, expiration=3600):
-    serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
-    try:
-        return serializer.loads(token, salt='password-reset-salt', max_age=expiration)
-    except Exception:
-        return None
 
 
 @app.before_request
 def log_request():
-    current_app.logger.info(f"Incoming {request.method} {request.path}")
+    current_app.logger.info(f"[{datetime.utcnow().isoformat()}] {request.method} {request.path} | Data: {request.get_json(silent=True)}")
 
+@app.after_request
+def set_security_headers(response):
+    
+    response.headers['Cache-Control'] = 'no-store'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['Referrer-Policy'] = 'no-referrer'
+    response.headers['Permissions-Policy'] = 'geolocation=()'
+    return response
+
+
+def generate_reset_token(email):
+    serializer = URLSafeTimedSerializer(app.secret_key)
+    return serializer.dumps(email, salt='password-reset-salt')
+
+def verify_reset_token(token, expiration=3600):
+    serializer = URLSafeTimedSerializer(app.secret_key)
+    try:
+        return serializer.loads(token, salt='password-reset-salt', max_age=expiration)
+    except Exception:
+        return None
 
 
 def send_reset_email(recipient_email, reset_link):
@@ -121,6 +129,8 @@ def send_verification_email(email, ip_address):
     mail.send(msg)
     return verification_code
 
+
+
 CONSUMER_KEY = os.getenv('MPESA_CONSUMER_KEY')
 CONSUMER_SECRET = os.getenv('MPESA_CONSUMER_SECRET')
 SHORTCODE = str(os.getenv('MPESA_SHORTCODE'))
@@ -134,7 +144,7 @@ def get_mpesa_access_token():
         res.raise_for_status()
         return res.json().get('access_token')
     except Exception as e:
-        print("Failed to Get MPesa Access Token:", str(e))
+        current_app.logger.error(f"Failed to Get MPesa Access Token: {str(e)}")
         return None
 
 @app.route('/pay_mpesa', methods=['POST'])
@@ -195,7 +205,7 @@ def pay_mpesa():
         db.session.add(payment)
         db.session.commit()
 
-       
+        
         if app.debug or os.getenv("FLASK_ENV") == "development":
             fake_callback = {
                 "Body": {
@@ -210,7 +220,7 @@ def pay_mpesa():
             try:
                 requests.post('http://localhost:8000/mpesa/callback', json=fake_callback)
             except Exception as e:
-                print("Failed to simulate callback:", str(e))
+                current_app.logger.error(f"Failed to simulate callback: {str(e)}")
 
         return jsonify({
             "message": "MPesa STK Push initiated",
@@ -234,7 +244,7 @@ def pay_mpesa():
 @app.route('/mpesa/callback', methods=['POST'])
 def mpesa_callback():
     data = request.get_json()
-    print("Received MPesa Callback:", data)
+    current_app.logger.info(f"Received MPesa Callback: {data}")
 
     try:
         callback = data['Body']['stkCallback']
@@ -252,7 +262,7 @@ def mpesa_callback():
             return jsonify({'error': 'Payment not found'}), 404
 
     except Exception as e:
-        print("Callback error:", str(e))
+        current_app.logger.error(f"Callback error: {str(e)}")
         return jsonify({'error': 'Invalid callback format'}), 400
 
 @app.route('/mpesa/payment_status_by_txn/<transaction_id>', methods=['GET'])
@@ -271,12 +281,6 @@ def get_payment_status_by_txn(transaction_id):
     }), 200
 
 
-
-@app.before_request
-def log_request():
-    print(f"[{datetime.utcnow()}] {request.method} {request.path} | Data: {request.get_json(silent=True)}")
-
-
 @app.route('/')
 def home():
     return "Hello from Sizzled Munch!"
@@ -287,36 +291,37 @@ def is_admin(admin_id):
     return AdminUser.query.get(admin_id) is not None
 
 
+def set_session_user(user_id, is_admin_flag):
+    session['user_id'] = user_id
+    session['is_admin'] = is_admin_flag
+    session.permanent = True
+    session.modified = True  
+
+
 @app.route('/signup', methods=['POST'])
 def signup():
-    data = request.get_json()
-    username = data.get('username')
-    email = data.get('email')
+    data = request.get_json() or {}
+    username = (data.get('username') or '').strip()
+    email = (data.get('email') or '').strip().lower()
     password = data.get('password')
-    is_google = data.get('is_google', False)
+    is_google = bool(data.get('is_google', False))
 
     if not username or not email:
         return jsonify({'error': 'Username and email are required'}), 400
 
-    
     if User.query.filter_by(username=username).first():
         return jsonify({'error': 'Username already exists'}), 409
     if User.query.filter_by(email=email).first():
         return jsonify({'error': 'Email already exists'}), 409
 
-    
     if is_google:
         user = User(username=username, email=email, is_verified=True)
         db.session.add(user)
         db.session.commit()
-        session['user_id'] = user.id  # ✅ Log user in immediately
-        session['is_admin'] = False
-        return jsonify({
-            'message': 'Google user registered successfully.',
-            'user': serialize_user(user)
-        }), 201
+        set_session_user(user.id, False)
+        current_app.logger.info(f"Google user registered and logged in: {username}")
+        return jsonify({'message': 'Google user registered successfully.', 'user': serialize_user(user)}), 201
 
-   
     if not password:
         return jsonify({'error': 'Password is required for normal signup'}), 400
 
@@ -331,32 +336,12 @@ def signup():
     db.session.add(user)
     db.session.commit()
 
-    # ✅ Send Verification Email:
-    msg = Message(
-        subject="Verify Your Sizzled Munch Email",
-        sender=app.config['MAIL_USERNAME'],
-        recipients=[email]
-    )
-    msg.body = f"""Verify Your Email Address
 
-To continue using your Sizzled Munch account, please verify your email address.
+    send_verification_email(email, request.remote_addr or 'unknown')
 
-Enter this verification code:
-{verification_code}
+    set_session_user(user.id, False)
 
-The request for this verification originated from IP: 127.0.0.1
-
-If this wasn’t you, we recommend:
-    Resetting your Sizzled Munch password immediately.
-    Checking your account for unauthorized changes.
-    Contacting Sizzled Munch support if you can't access your account.
-
-Sizzled Munch, 00100, Nairobi, Kaunda Street.
-"""
-    mail.send(msg)
-
-    session['user_id'] = user.id  
-    session['is_admin'] = False
+    current_app.logger.info(f"User signed up and verification email sent: {username}")
 
     return jsonify({
         'message': 'User registered. Verification email sent.',
@@ -364,18 +349,13 @@ Sizzled Munch, 00100, Nairobi, Kaunda Street.
     }), 201
 
 
-
 @app.route('/signin', methods=['POST'])
 def signin():
     if not request.is_json:
         return jsonify({'error': 'Invalid Content-Type; must be JSON'}), 400
 
-    data = request.get_json()
-    identifier = (
-        data.get('identifier')
-        or data.get('username')
-        or data.get('email')
-    )
+    data = request.get_json() or {}
+    identifier = (data.get('identifier') or data.get('username') or data.get('email') or '').strip()
     password = data.get('password')
 
     if not identifier or not password:
@@ -385,31 +365,51 @@ def signin():
         (AdminUser.username == identifier) | (AdminUser.email == identifier)
     ).first()
     if admin and admin.check_password(password):
-        session['user_id'] = admin.id
-        session['is_admin'] = True
-        session.permanent = True
+        set_session_user(admin.id, True)
         admin.is_online = True
         admin.last_login_at = datetime.utcnow()
         db.session.commit()
+        current_app.logger.info(f"Admin user logged in: {identifier}")
         return jsonify(serialize_admin(admin)), 200
 
     user = User.query.filter(
         (User.username == identifier) | (User.email == identifier)
     ).first()
     if user and user.check_password(password):
-        session['user_id'] = user.id
-        session['is_admin'] = False
-        session.permanent = True
+        set_session_user(user.id, False)
         user.is_online = True
         user.last_login_at = datetime.utcnow()
         db.session.commit()
+        current_app.logger.info(f"User logged in: {identifier}")
         return jsonify(serialize_user(user)), 200
 
-    # Failed login: delay and log
-    sleep(0.3)  # Slow down brute-force slightly
+   
+    sleep(0.3)  
     current_app.logger.warning(f"Failed login attempt for {identifier}")
 
     return jsonify({'error': 'Invalid username/email or password'}), 401
+
+
+
+@app.route('/current_user', methods=['GET'])
+def current_user():
+    user_id = session.get('user_id')
+    is_admin_flag = session.get('is_admin')
+    if not user_id:
+        return jsonify({'user': None}), 200
+
+    if is_admin_flag:
+        admin = AdminUser.query.get(user_id)
+        if admin:
+            return jsonify({'user': serialize_admin(admin)}), 200
+    else:
+        user = User.query.get(user_id)
+        if user:
+            return jsonify({'user': serialize_user(user)}), 200
+
+   
+    session.clear()
+    return jsonify({'user': None}), 200
 
 
 
