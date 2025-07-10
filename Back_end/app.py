@@ -296,11 +296,16 @@ def is_admin(admin_id):
     return AdminUser.query.get(admin_id) is not None
 
 
-def set_session_user(user_id, is_admin_flag):
+def set_session_user(user_id, is_admin=False):
+    """
+    Store user session data.
+    :param user_id: The user's ID (int).
+    :param is_admin: Whether the user is an admin (bool).
+    """
     session['user_id'] = user_id
-    session['is_admin'] = is_admin_flag
+    session['is_admin'] = is_admin
     session.permanent = True
-    session.modified = True  
+    session.modified = True
 
 
 @app.route('/signup', methods=['POST'])
