@@ -362,7 +362,7 @@ def signin():
     if not identifier or not password:
         return jsonify({'error': 'Missing username/email and password.'}), 400
 
-    # Lower BOTH sides inside DB query
+    # Case-insensitive search inside DB query
     admin = AdminUser.query.filter(
         (func.lower(AdminUser.username) == func.lower(identifier)) |
         (func.lower(AdminUser.email) == func.lower(identifier))
@@ -389,10 +389,9 @@ def signin():
         current_app.logger.info(f"[LOGIN] User logged in: {identifier}")
         return jsonify(serialize_user(user)), 200
 
-    sleep(0.3)
+    sleep(0.3)  # Slow down brute-force attempts
     current_app.logger.warning(f"[FAILED LOGIN] Identifier: {identifier}")
     return jsonify({'error': 'Invalid username/email or password.'}), 401
-
 
 
 
