@@ -1,0 +1,11 @@
+Back_end/
+*.py
+*.pyc
+*.db
+*.sql
+*.lock
+*.toml
+__pycache__/
+migrations/
+virtual/
+

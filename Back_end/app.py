@@ -7,12 +7,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 from sqlalchemy.exc import IntegrityError
 from dotenv import load_dotenv
-import os
-import random
-import string
-import requests
-import base64
-
+import os, base64, random, requests, string
+from time import sleep
 from models import db, User, AdminUser, MenuItem, CartItem, CartSummary, Order, OrderItem, MpesaPayment
 from serializer import serialize_user, serialize_admin, serialize_menu_item, serialize_cart_item
 
@@ -364,8 +360,10 @@ Sizzled Munch, 00100, Nairobi, Kaunda Street.
 
 @app.route('/signin', methods=['POST'])
 def signin():
-    data = request.get_json()
+    if not request.is_json:
+        return jsonify({'error': 'Invalid Content-Type; must be JSON'}), 400
 
+    data = request.get_json()
     identifier = (
         data.get('identifier')
         or data.get('username')
@@ -382,11 +380,11 @@ def signin():
     if admin and admin.check_password(password):
         session['user_id'] = admin.id
         session['is_admin'] = True
+        session.permanent = True
         admin.is_online = True
         admin.last_login_at = datetime.utcnow()
         db.session.commit()
-        resp = make_response(jsonify(serialize_admin(admin)), 200)
-        return resp
+        return jsonify(serialize_admin(admin)), 200
 
     user = User.query.filter(
         (User.username == identifier) | (User.email == identifier)
@@ -394,16 +392,18 @@ def signin():
     if user and user.check_password(password):
         session['user_id'] = user.id
         session['is_admin'] = False
+        session.permanent = True
         user.is_online = True
         user.last_login_at = datetime.utcnow()
         db.session.commit()
-        resp = make_response(jsonify(serialize_user(user)), 200)
-        return resp
+        return jsonify(serialize_user(user)), 200
 
-    current_app.logger.warning(
-        f"Failed login attempt with identifier: {identifier}"
-    )
+    # Failed login: delay and log
+    sleep(0.3)  # Slow down brute-force slightly
+    current_app.logger.warning(f"Failed login attempt for {identifier}")
+
     return jsonify({'error': 'Invalid username/email or password'}), 401
+
 
 
 @app.route('/logout', methods=['POST'])
