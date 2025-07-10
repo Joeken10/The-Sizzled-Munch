@@ -1,3 +1,9 @@
+import os
+if os.getenv("RENDER") != "true":
+    from dotenv import load_dotenv, find_dotenv
+    load_dotenv(find_dotenv(), override=True)
+
+
 from flask import Flask, request, jsonify, session, current_app
 from sqlalchemy import func
 from flask_migrate import Migrate
@@ -23,7 +29,10 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 
-app.secret_key = os.getenv('SECRET_KEY', 'default-unsafe-key')
+app.secret_key = os.getenv('SECRET_KEY')
+if not app.secret_key:
+    raise RuntimeError("SECRET_KEY environment variable is missing!")
+
 
 
 db_uri = os.getenv('DATABASE_URL')
