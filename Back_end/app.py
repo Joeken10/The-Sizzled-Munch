@@ -1,9 +1,3 @@
-import os
-if os.getenv("RENDER") != "true":
-    from dotenv import load_dotenv, find_dotenv
-    load_dotenv(find_dotenv(), override=True)
-
-
 from flask import Flask, request, jsonify, session, current_app
 from sqlalchemy import func
 from flask_migrate import Migrate
@@ -29,10 +23,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 
-app.secret_key = os.getenv('SECRET_KEY')
-if not app.secret_key:
-    raise RuntimeError("SECRET_KEY environment variable is missing!")
-
+app.secret_key = os.getenv('SECRET_KEY', 'default-unsafe-key')
 
 
 db_uri = os.getenv('DATABASE_URL')
@@ -320,21 +311,25 @@ def set_session_user(user_id, is_admin=False):
 @app.route('/signup', methods=['POST'])
 def signup():
     data = request.get_json() or {}
-    username = (data.get('username') or '').strip().lower()  # Force lowercase
+    username = (data.get('username') or '').strip().lower()
     email = (data.get('email') or '').strip().lower()
-    password = data.get('password')
+    password = (data.get('password') or '').strip()
     is_google = bool(data.get('is_google', False))
 
     if not username or not email:
-        return jsonify({'error': 'Username and email are required'}), 400
+        return jsonify({'error': 'Username and email are required.'}), 400
 
     if User.query.filter_by(username=username).first():
-        return jsonify({'error': 'Username already exists'}), 409
+        return jsonify({'error': 'Username already exists.'}), 409
     if User.query.filter_by(email=email).first():
-        return jsonify({'error': 'Email already exists'}), 409
+        return jsonify({'error': 'Email already exists.'}), 409
 
     if is_google:
-        user = User(username=username, email=email, is_verified=True)
+        user = User(
+            username=username,
+            email=email,
+            is_verified=True
+        )
         db.session.add(user)
         db.session.commit()
         set_session_user(user.id, False)
@@ -342,16 +337,18 @@ def signup():
         return jsonify({'message': 'Google user registered successfully.', 'user': serialize_user(user)}), 201
 
     if not password:
-        return jsonify({'error': 'Password is required for normal signup'}), 400
+        return jsonify({'error': 'Password is required for normal signup.'}), 400
+
+    hashed_password = generate_password_hash(password, method='scrypt')
 
     verification_code = generate_verification_code()
     user = User(
         username=username,
         email=email,
+        password=hashed_password,
         verification_code=verification_code,
         verification_code_sent_at=datetime.utcnow()
     )
-    user.password = password
     db.session.add(user)
     db.session.commit()
 
@@ -364,8 +361,6 @@ def signup():
         'message': 'User registered. Verification email sent.',
         'user': serialize_user(user)
     }), 201
-
-
 
 @app.route('/signin', methods=['POST'])
 def signin():
