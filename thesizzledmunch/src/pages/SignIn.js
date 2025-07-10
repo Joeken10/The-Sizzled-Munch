@@ -16,11 +16,8 @@ function SignIn() {
   const location = useLocation();
 
   const verified = new URLSearchParams(location.search).get('verified');
-
-  // Use environment variable with fallback
   const API_URL = process.env.REACT_APP_API_URL || 'https://the-sizzled-munch.onrender.com';
 
-  // Wrapper for fetch with credentials included
   const apiFetch = async (url, options = {}) => {
     try {
       const response = await fetch(`${API_URL}${url}`, {
@@ -34,7 +31,6 @@ function SignIn() {
     }
   };
 
-  // Redirect if user already logged in or restore from localStorage
   useEffect(() => {
     if (user) {
       navigate(user.isAdmin ? '/admin/menu' : '/');
@@ -53,12 +49,10 @@ function SignIn() {
     }
   }, [user, navigate, setUser]);
 
-  // Autofocus on identifier input on mount
   useEffect(() => {
     document.querySelector('input[aria-label="Username or Email"]')?.focus();
   }, []);
 
-  // Form submit handler
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -78,7 +72,7 @@ function SignIn() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          identifier: trimmedIdentifier,
+          identifier: trimmedIdentifier,  // ✅ Correct key matching backend
           password: trimmedPassword,
         }),
       });
@@ -119,7 +113,6 @@ function SignIn() {
     }
   };
 
-  // Disable submit if either input is empty or currently loading
   const isSubmitDisabled = loading || !identifier.trim() || !password.trim();
 
   return (
