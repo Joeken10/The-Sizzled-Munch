@@ -62,6 +62,13 @@ def verify_reset_token(token, expiration=3600):
     except Exception:
         return None
 
+
+@app.before_request
+def log_request():
+    current_app.logger.info(f"Incoming {request.method} {request.path}")
+
+
+
 def send_reset_email(recipient_email, reset_link):
     msg = Message(
         subject='Reset Your Password - The Sizzled Munch',
