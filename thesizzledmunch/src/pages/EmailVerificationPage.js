@@ -19,6 +19,7 @@ function EmailVerificationPage() {
   const [loadingVerify, setLoadingVerify] = useState(false);
   const [loadingResend, setLoadingResend] = useState(false);
 
+  // Autofocus on verification code input when email is present
   useEffect(() => {
     if (email) {
       document.getElementById('verification-code')?.focus();
@@ -30,31 +31,35 @@ function EmailVerificationPage() {
     setLoadingVerify(true);
     setError('');
     setMessage('');
+    setResendMessage('');
+
     try {
       const res = await apiFetch('/verify_email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim().toLowerCase(), verification_code: code }),
+        body: JSON.stringify({ email: email.trim().toLowerCase(), verification_code: code.trim() }),
       });
+
       const data = await res.json();
+
       if (res.ok) {
-        setMessage(data.message);
+        setMessage(data.message || 'Email verified successfully!');
         setTimeout(() => {
-          setUser(null);
-          localStorage.removeItem('user');
-          navigate('/signin?verified=1');
+          setUser(null); // Clear user context after verification
+          localStorage.removeItem('user'); // Clear localStorage user
+          navigate('/signin?verified=1'); // Redirect to signin with verified query
         }, 2000);
       } else {
-        if (data.error?.includes('expired')) {
-          setError('Code expired. Sending a new code...');
+        if (data.error?.toLowerCase().includes('expired')) {
+          setError('Verification code expired. Sending a new code...');
           await handleResendCode(true);
         } else {
-          setError(data.error || 'Verification failed.');
+          setError(data.error || 'Verification failed. Please try again.');
         }
       }
     } catch (err) {
-      console.error(err);
-      setError('Something went wrong.');
+      console.error('Verification error:', err);
+      setError('Network or server error. Please try again later.');
     } finally {
       setLoadingVerify(false);
     }
@@ -63,30 +68,38 @@ function EmailVerificationPage() {
   const handleResendCode = async (silent = false) => {
     if (!email) return;
     setLoadingResend(true);
+    if (!silent) {
+      setResendMessage('');
+      setError('');
+    }
+
     try {
       const res = await apiFetch('/resend_verification', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim().toLowerCase() }),
       });
+
       const data = await res.json();
+
       if (res.ok) {
-        if (!silent) setResendMessage(data.message);
+        if (!silent) setResendMessage(data.message || 'Verification code resent!');
       } else {
-        if (!silent) setResendMessage(data.error || 'Failed to resend code.');
+        if (!silent) setResendMessage(data.error || 'Failed to resend verification code.');
       }
     } catch (err) {
-      console.error(err);
-      if (!silent) setResendMessage('Something went wrong.');
+      console.error('Resend code error:', err);
+      if (!silent) setResendMessage('Network or server error. Please try again later.');
     } finally {
       setLoadingResend(false);
     }
   };
 
   return (
-    <div style={styles.container}>
-      <h2>Email Verification</h2>
-      <form onSubmit={handleVerify} style={styles.form}>
+    <div style={styles.container} role="main" aria-labelledby="email-verification-title">
+      <h2 id="email-verification-title">Email Verification</h2>
+
+      <form onSubmit={handleVerify} style={styles.form} noValidate>
         <input
           type="email"
           placeholder="Enter your email"
@@ -95,6 +108,8 @@ function EmailVerificationPage() {
           onChange={(e) => setEmail(e.target.value)}
           style={styles.input}
           disabled={!!user?.email}
+          aria-label="Email address"
+          autoComplete="email"
         />
         <input
           id="verification-code"
@@ -104,11 +119,14 @@ function EmailVerificationPage() {
           required
           onChange={(e) => setCode(e.target.value)}
           style={styles.input}
+          aria-label="Verification code"
+          autoComplete="one-time-code"
         />
         <button
           type="submit"
           style={styles.button}
           disabled={loadingVerify || loadingResend}
+          aria-busy={loadingVerify}
         >
           {loadingVerify ? 'Verifying...' : 'Verify Email'}
         </button>
@@ -118,13 +136,27 @@ function EmailVerificationPage() {
         onClick={() => handleResendCode(false)}
         style={styles.resendButton}
         disabled={loadingVerify || loadingResend || !email}
+        aria-busy={loadingResend}
+        aria-disabled={loadingVerify || loadingResend || !email}
       >
         {loadingResend ? 'Sending...' : 'Resend Verification Code'}
       </button>
 
-      {resendMessage && <p style={styles.info}>{resendMessage}</p>}
-      {message && <p style={styles.success}>{message}</p>}
-      {error && <p style={styles.error}>{error}</p>}
+      {resendMessage && (
+        <p role="alert" style={styles.info}>
+          {resendMessage}
+        </p>
+      )}
+      {message && (
+        <p role="alert" style={styles.success}>
+          {message}
+        </p>
+      )}
+      {error && (
+        <p role="alert" style={styles.error}>
+          {error}
+        </p>
+      )}
     </div>
   );
 }
@@ -137,6 +169,7 @@ const styles = {
     border: '1px solid #ddd',
     borderRadius: '8px',
     fontFamily: 'Arial, sans-serif',
+    backgroundColor: '#fff',
   },
   form: {
     display: 'flex',
@@ -168,9 +201,18 @@ const styles = {
     borderRadius: '5px',
     cursor: 'pointer',
   },
-  success: { color: 'green', marginTop: '15px' },
-  error: { color: 'red', marginTop: '15px' },
-  info: { color: 'blue', marginTop: '15px' },
+  success: {
+    color: 'green',
+    marginTop: '15px',
+  },
+  error: {
+    color: 'red',
+    marginTop: '15px',
+  },
+  info: {
+    color: 'blue',
+    marginTop: '15px',
+  },
 };
 
 export default EmailVerificationPage;
