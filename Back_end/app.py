@@ -339,16 +339,14 @@ def signup():
     if not password:
         return jsonify({'error': 'Password is required for normal signup.'}), 400
 
-    hashed_password = generate_password_hash(password, method='scrypt')
-
     verification_code = generate_verification_code()
     user = User(
         username=username,
         email=email,
-        password=hashed_password,
         verification_code=verification_code,
         verification_code_sent_at=datetime.utcnow()
     )
+    user.password = password  
     db.session.add(user)
     db.session.commit()
 
@@ -361,6 +359,7 @@ def signup():
         'message': 'User registered. Verification email sent.',
         'user': serialize_user(user)
     }), 201
+
 
 @app.route('/signin', methods=['POST'])
 def signin():
