@@ -45,7 +45,7 @@ function EmailVerificationPage() {
       if (res.ok) {
         setMessage(data.message || 'Email verified successfully!');
         setTimeout(() => {
-          setUser(null); // Clear user context after verification
+          setUser(null); 
           localStorage.removeItem('user'); 
           navigate('/signin?verified=1'); 
         }, 2000);
