@@ -359,36 +359,36 @@ def signin():
     password = data.get('password')
 
     if not identifier or not password:
-        return jsonify({'error': 'Missing identifier/email/username or password'}), 400
+        return jsonify({'error': 'Missing username/email and password.'}), 400
 
+   
     admin = AdminUser.query.filter(
         (AdminUser.username == identifier) | (AdminUser.email == identifier)
     ).first()
     if admin and admin.check_password(password):
-        set_session_user(admin.id, True)
+        set_session_user(admin.id, is_admin=True)
         admin.is_online = True
         admin.last_login_at = datetime.utcnow()
         db.session.commit()
-        current_app.logger.info(f"Admin user logged in: {identifier}")
+        current_app.logger.info(f"[LOGIN] Admin logged in: {identifier}")
         return jsonify(serialize_admin(admin)), 200
 
+    
     user = User.query.filter(
         (User.username == identifier) | (User.email == identifier)
     ).first()
     if user and user.check_password(password):
-        set_session_user(user.id, False)
+        set_session_user(user.id, is_admin=False)
         user.is_online = True
         user.last_login_at = datetime.utcnow()
         db.session.commit()
-        current_app.logger.info(f"User logged in: {identifier}")
+        current_app.logger.info(f"[LOGIN] User logged in: {identifier}")
         return jsonify(serialize_user(user)), 200
 
-   
-    sleep(0.3)  
-    current_app.logger.warning(f"Failed login attempt for {identifier}")
 
-    return jsonify({'error': 'Invalid username/email or password'}), 401
-
+    sleep(0.3) 
+    current_app.logger.warning(f"[FAILED LOGIN] Identifier: {identifier}")
+    return jsonify({'error': 'Invalid username/email or password.'}), 401
 
 
 @app.route('/current_user', methods=['GET'])
