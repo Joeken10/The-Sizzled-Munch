@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, session, current_app
+from flask import Flask, request, jsonify, session, current_app, logging
 from sqlalchemy import func
 from flask_migrate import Migrate
 from flask_cors import CORS
@@ -17,6 +17,8 @@ from serializer import serialize_user, serialize_admin, serialize_menu_item, ser
 load_dotenv()
 
 app = Flask(__name__)
+
+
 
 
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -42,6 +44,13 @@ app.config['MAIL_PORT'] = 465
 app.config['MAIL_USE_SSL'] = True
 app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+
+if not app.debug:
+    gunicorn_logger = logging.getLogger('gunicorn.error')
+    app.logger.handlers = gunicorn_logger.handlers
+    app.logger.setLevel(logging.INFO)
+else:
+    app.logger.setLevel(logging.DEBUG)
 
 # Initialize extensions
 mail = Mail(app)
