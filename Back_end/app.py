@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, session, current_app, make_response
+from flask import Flask, request, jsonify, session, current_app
 from sqlalchemy import func
 from flask_migrate import Migrate
 from flask_cors import CORS
@@ -28,13 +28,10 @@ if db_uri and db_uri.startswith('postgres://'):
 
 app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-# Session cookie security
 app.config['SESSION_COOKIE_SAMESITE'] = 'None'
 app.config['SESSION_COOKIE_SECURE'] = True
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)  # Session lifetime
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 
-# Mail Config
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
 app.config['MAIL_USE_SSL'] = True
@@ -50,20 +47,19 @@ CORS(app, supports_credentials=True, origins=[
     "http://localhost:3000"
 ])
 
-
 @app.before_request
 def log_request():
     current_app.logger.info(f"[{datetime.utcnow().isoformat()}] {request.method} {request.path} | Data: {request.get_json(silent=True)}")
 
 @app.after_request
 def set_security_headers(response):
-    
     response.headers['Cache-Control'] = 'no-store'
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['X-Frame-Options'] = 'DENY'
     response.headers['Referrer-Policy'] = 'no-referrer'
     response.headers['Permissions-Policy'] = 'geolocation=()'
     return response
+
 
 
 def generate_reset_token(email):
@@ -355,19 +351,16 @@ def signin():
         return jsonify({'error': 'Invalid Content-Type; must be JSON'}), 400
 
     data = request.get_json() or {}
-    identifier = (data.get('identifier') or '').strip()
+    identifier = (data.get('identifier') or '').strip().lower()
     password = data.get('password')
 
     if not identifier or not password:
         return jsonify({'error': 'Missing username/email and password.'}), 400
 
-
-    normalized_identifier = identifier.lower()
-
    
     admin = AdminUser.query.filter(
-        (func.lower(AdminUser.username) == normalized_identifier) |
-        (func.lower(AdminUser.email) == normalized_identifier)
+        (func.lower(AdminUser.username) == identifier) |
+        (func.lower(AdminUser.email) == identifier)
     ).first()
 
     if admin:
@@ -380,11 +373,13 @@ def signin():
             return jsonify(serialize_admin(admin)), 200
         else:
             current_app.logger.warning(f"[LOGIN FAILED] Wrong password for admin: {identifier}")
+            sleep(0.3)  
+            return jsonify({'error': 'Invalid username/email or password.'}), 401
 
     
     user = User.query.filter(
-        (func.lower(User.username) == normalized_identifier) |
-        (func.lower(User.email) == normalized_identifier)
+        (func.lower(User.username) == identifier) |
+        (func.lower(User.email) == identifier)
     ).first()
 
     if user:
@@ -397,12 +392,13 @@ def signin():
             return jsonify(serialize_user(user)), 200
         else:
             current_app.logger.warning(f"[LOGIN FAILED] Wrong password for user: {identifier}")
+            sleep(0.3)
+            return jsonify({'error': 'Invalid username/email or password.'}), 401
 
-    
+   
+    current_app.logger.warning(f"[LOGIN FAILED] No user found with identifier: {identifier}")
     sleep(0.3)
-    current_app.logger.warning(f"[LOGIN FAILED] Invalid identifier or password: {identifier}")
     return jsonify({'error': 'Invalid username/email or password.'}), 401
-
 
 
 
