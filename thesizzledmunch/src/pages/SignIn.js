@@ -16,7 +16,7 @@ function SignIn() {
   const location = useLocation();
   const verified = new URLSearchParams(location.search).get('verified');
 
-  const API_URL = 'https://the-sizzled-munch.onrender.com'; // Static, safe for production
+  const API_URL = 'https://the-sizzled-munch.onrender.com';
 
   const apiFetch = (url, options = {}) =>
     fetch(`${API_URL}${url}`, {
@@ -24,12 +24,11 @@ function SignIn() {
       ...options,
     });
 
-  // Auto-redirect logged-in users
+  // Auto-redirect logged-in users & load from localStorage
   useEffect(() => {
     if (user) {
       navigate(user.isAdmin ? '/admin/menu' : '/');
     } else {
-      // Auto-fill from localStorage if needed
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
         try {
@@ -43,6 +42,11 @@ function SignIn() {
       }
     }
   }, [user, navigate, setUser]);
+
+  // Auto-focus on page load
+  useEffect(() => {
+    document.querySelector('input[aria-label="Username or Email"]')?.focus();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -65,7 +69,7 @@ function SignIn() {
         body: JSON.stringify({ identifier: trimmedIdentifier, password: trimmedPassword }),
       });
 
-      let data;
+      let data = null;
       try {
         data = await response.json();
       } catch (jsonError) {
@@ -91,7 +95,7 @@ function SignIn() {
         navigate(data.isAdmin ? '/admin/menu' : '/');
       } else {
         setError(data.error || 'Invalid username/email or password.');
-        setPassword('');  // Clear password on failed login
+        setPassword('');
       }
     } catch (err) {
       console.error('SignIn error:', err);
