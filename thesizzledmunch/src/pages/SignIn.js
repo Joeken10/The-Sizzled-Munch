@@ -14,10 +14,13 @@ function SignIn() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
+
   const verified = new URLSearchParams(location.search).get('verified');
 
-  const API_URL = 'https://the-sizzled-munch.onrender.com';
+  // Use environment variable with fallback
+  const API_URL = process.env.REACT_APP_API_URL || 'https://the-sizzled-munch.onrender.com';
 
+  // Wrapper for fetch with credentials included
   const apiFetch = async (url, options = {}) => {
     try {
       const response = await fetch(`${API_URL}${url}`, {
@@ -31,6 +34,7 @@ function SignIn() {
     }
   };
 
+  // Redirect if user already logged in or restore from localStorage
   useEffect(() => {
     if (user) {
       navigate(user.isAdmin ? '/admin/menu' : '/');
@@ -49,10 +53,12 @@ function SignIn() {
     }
   }, [user, navigate, setUser]);
 
+  // Autofocus on identifier input on mount
   useEffect(() => {
     document.querySelector('input[aria-label="Username or Email"]')?.focus();
   }, []);
 
+  // Form submit handler
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -113,18 +119,21 @@ function SignIn() {
     }
   };
 
+  // Disable submit if either input is empty or currently loading
+  const isSubmitDisabled = loading || !identifier.trim() || !password.trim();
+
   return (
-    <div className="signin-container">
-      <h2>Sign In</h2>
+    <div className="signin-container" role="main" aria-labelledby="signin-title">
+      <h2 id="signin-title">Sign In</h2>
 
       {verified && (
-        <p className="success-message" aria-live="polite">
+        <p className="success-message" aria-live="polite" role="alert">
           Email verified successfully! You can now sign in.
         </p>
       )}
 
       {error && (
-        <p className="error-message" aria-live="assertive">
+        <p className="error-message" aria-live="assertive" role="alert">
           {error}
         </p>
       )}
@@ -138,6 +147,7 @@ function SignIn() {
           value={identifier}
           onChange={(e) => setIdentifier(e.target.value)}
           required
+          disabled={loading}
         />
 
         <div className="password-field">
@@ -149,15 +159,26 @@ function SignIn() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            disabled={loading}
           />
-          <span
+          <button
+            type="button"
             className="toggle-password"
             onClick={() => setShowPassword((prev) => !prev)}
-            style={{ cursor: 'pointer' }}
-            aria-label="Toggle Password Visibility"
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            disabled={loading}
+            style={{
+              cursor: loading ? 'not-allowed' : 'pointer',
+              background: 'none',
+              border: 'none',
+              fontSize: '1.2rem',
+              lineHeight: 1,
+              padding: 0,
+              marginLeft: '8px',
+            }}
           >
             {showPassword ? '🙈' : '👁️'}
-          </span>
+          </button>
         </div>
 
         <div className="checkbox-container">
@@ -167,12 +188,18 @@ function SignIn() {
               checked={rememberMe}
               onChange={() => setRememberMe((prev) => !prev)}
               aria-label="Remember Me"
+              disabled={loading}
             />
             Remember Me
           </label>
         </div>
 
-        <button type="submit" disabled={loading}>
+        <button
+          type="submit"
+          disabled={isSubmitDisabled}
+          aria-disabled={isSubmitDisabled}
+          aria-busy={loading}
+        >
           {loading ? 'Signing In...' : 'Sign In'}
         </button>
       </form>
