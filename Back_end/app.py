@@ -23,6 +23,7 @@ app = Flask(__name__)
 
 app.secret_key = os.getenv('SECRET_KEY', 'default-unsafe-key')  
 
+
 db_uri = os.getenv('DATABASE_URL')
 if db_uri and db_uri.startswith('postgres://'):
     db_uri = db_uri.replace('postgres://', 'postgresql://', 1)
@@ -30,7 +31,11 @@ if db_uri and db_uri.startswith('postgres://'):
 app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Mail Config
+
+app.config['SESSION_COOKIE_SAMESITE'] = 'None'  
+app.config['SESSION_COOKIE_SECURE'] = True      
+
+# ✅ Mail Config
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
 app.config['MAIL_USE_SSL'] = True
@@ -40,8 +45,12 @@ app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
 mail = Mail(app)
 db.init_app(app)
 migrate = Migrate(app, db)
-CORS(app, supports_credentials=True)
 
+
+CORS(app, supports_credentials=True, origins=[
+    "https://the-sizzled-munch-2397.vercel.app",  
+    "http://localhost:3000"                       
+])
 
 
 def generate_reset_token(email):
