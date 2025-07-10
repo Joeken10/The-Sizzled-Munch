@@ -71,11 +71,11 @@ def set_security_headers(response):
 
 
 def generate_reset_token(email):
-    serializer = URLSafeTimedSerializer(app.secret_key)
+    serializer = URLSafeTimedSerializer(current_app.secret_key)
     return serializer.dumps(email, salt='password-reset-salt')
 
 def verify_reset_token(token, expiration=3600):
-    serializer = URLSafeTimedSerializer(app.secret_key)
+    serializer = URLSafeTimedSerializer(current_app.secret_key)
     try:
         return serializer.loads(token, salt='password-reset-salt', max_age=expiration)
     except Exception:
