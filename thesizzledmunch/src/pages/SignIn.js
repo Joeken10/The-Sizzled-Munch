@@ -33,24 +33,35 @@ function SignIn() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!identifier.trim() || !password.trim()) {
+    const trimmedIdentifier = identifier.trim().toLowerCase();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedIdentifier || !trimmedPassword) {
       setError('Please enter your username/email and password.');
       return;
     }
 
     setLoading(true);
     setError('');
+
     try {
       const response = await apiFetch('/signin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          identifier: identifier.trim().toLowerCase(),
-          password,
+          identifier: trimmedIdentifier,
+          password: trimmedPassword,
         }),
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error('Failed to parse JSON response:', jsonError);
+        setError('Unexpected server response. Please try again later.');
+        return;
+      }
 
       if (response.ok) {
         if (data.is_password_reset_pending) {
@@ -72,7 +83,7 @@ function SignIn() {
       }
     } catch (err) {
       console.error('SignIn error:', err);
-      setError('An error occurred. Please try again later.');
+      setError('Network error. Please try again later.');
     } finally {
       setLoading(false);
     }
@@ -83,12 +94,16 @@ function SignIn() {
       <h2>Sign In</h2>
 
       {verified && (
-        <p className="success-message">
+        <p className="success-message" aria-live="polite">
           Email verified successfully! You can now sign in.
         </p>
       )}
 
-      {error && <p className="error-message">{error}</p>}
+      {error && (
+        <p className="error-message" aria-live="assertive">
+          {error}
+        </p>
+      )}
 
       <form onSubmit={handleSubmit} noValidate>
         <input
