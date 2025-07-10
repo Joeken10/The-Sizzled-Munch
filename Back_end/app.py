@@ -357,71 +357,65 @@ def signup():
 @app.route('/signin', methods=['POST'])
 def signin():
     if not request.is_json:
+        print("[DEBUG] Invalid Content-Type (not JSON)")
         return jsonify({'error': 'Invalid Content-Type; must be JSON'}), 400
 
     data = request.get_json() or {}
     identifier = (data.get('identifier') or '').strip().lower()
-    password = (data.get('password') or '')
+    password = (data.get('password') or '').strip()
 
-    current_app.logger.info(f"[SIGNIN PAYLOAD] Identifier received: '{identifier}'")
-    current_app.logger.info(f"[SIGNIN PAYLOAD] Password length: {len(password)}")
-
-    # Also log password after stripping (to catch accidental spaces)
-    password_stripped = password.strip()
-    if password != password_stripped:
-        current_app.logger.warning("[SIGNIN PAYLOAD] Password has leading/trailing spaces. Stripping it.")
-    password = password_stripped
-    current_app.logger.info(f"[SIGNIN PAYLOAD] Stripped Password length: {len(password)}")
+    print(f"[DEBUG] Identifier Received: {identifier}")
+    print(f"[DEBUG] Password Received: '{password}'")
 
     if not identifier or not password:
-        current_app.logger.warning("[SIGNIN FAILED] Missing credentials.")
+        print("[DEBUG] Missing credentials")
         return jsonify({'error': 'Missing username/email and password.'}), 400
 
-    # Admin login
     admin = AdminUser.query.filter(
         (func.lower(AdminUser.username) == identifier) |
         (func.lower(AdminUser.email) == identifier)
     ).first()
-    if admin:
-        current_app.logger.info(f"[ADMIN USER FOUND] Username: {admin.username}, Email: {admin.email}")
-        password_check = admin.check_password(password)
-        current_app.logger.info(f"[ADMIN PASSWORD CHECK] Success: {password_check}")
 
+    print(f"[DEBUG] Admin User Found: {admin.username if admin else 'None'}")
+
+    if admin:
+        password_check = admin.check_password(password)
+        print(f"[DEBUG] Admin Password Check: {password_check}")
         if password_check:
             set_session_user(admin.id, is_admin=True)
             admin.is_online = True
             admin.last_login_at = datetime.utcnow()
             db.session.commit()
-            current_app.logger.info(f"[LOGIN SUCCESS] Admin logged in: {identifier}")
+            print(f"[DEBUG] Admin Login Success: {identifier}")
             return jsonify(serialize_admin(admin)), 200
         else:
-            current_app.logger.warning(f"[LOGIN FAILED] Wrong password for admin: {identifier}")
+            print(f"[DEBUG] Admin Password Failed for {identifier}")
             sleep(0.3)
             return jsonify({'error': 'Invalid username/email or password.'}), 401
 
-    # Normal user login
     user = User.query.filter(
         (func.lower(User.username) == identifier) |
         (func.lower(User.email) == identifier)
     ).first()
-    if user:
-        current_app.logger.info(f"[USER FOUND] Username: {user.username}, Email: {user.email}")
-        password_check = user.check_password(password)
-        current_app.logger.info(f"[USER PASSWORD CHECK] Success: {password_check}")
 
+    print(f"[DEBUG] User Found: {user.username if user else 'None'}")
+
+    if user:
+        password_check = user.check_password(password)
+        print(f"[DEBUG] User Password Check: {password_check}")
         if password_check:
             set_session_user(user.id, is_admin=False)
             user.is_online = True
             user.last_login_at = datetime.utcnow()
             db.session.commit()
-            current_app.logger.info(f"[LOGIN SUCCESS] User logged in: {identifier}")
+            print(f"[DEBUG] User Login Success: {identifier}")
             return jsonify(serialize_user(user)), 200
         else:
-            current_app.logger.warning(f"[LOGIN FAILED] Wrong password for user: {identifier}")
+            print(f"[DEBUG] User Password Failed for {identifier}")
             sleep(0.3)
             return jsonify({'error': 'Invalid username/email or password.'}), 401
 
-    current_app.logger.warning(f"[LOGIN FAILED] No user found with identifier: {identifier}")
+    print(f"[DEBUG] No user found for {identifier}")
     sleep(0.3)
     return jsonify({'error': 'Invalid username/email or password.'}), 401
 
