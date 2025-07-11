@@ -364,68 +364,90 @@ def signup():
 
 @app.route('/signin', methods=['POST'])
 def signin():
+    current_app.logger.info("=== [SIGNIN] Login attempt started ===")
+
+    # Log IP address (Render-friendly)
+    ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)
+    current_app.logger.info(f"[SIGNIN] Login attempt from IP: {ip_address}")
+
     if not request.is_json:
-        current_app.logger.info("[DEBUG] Invalid Content-Type (not JSON)")
+        current_app.logger.info("[SIGNIN] Invalid Content-Type (not JSON)")
         return jsonify({'error': 'Invalid Content-Type; must be JSON'}), 400
 
     data = request.get_json() or {}
     email = (data.get('email') or '').strip().lower()
     password = (data.get('password') or '').strip()
 
-    current_app.logger.info("[DEBUG] Email Received: '%s'", email)
-    current_app.logger.info("[DEBUG] Password Received: '%s'", password)
+    current_app.logger.info(f"[SIGNIN] Email received: {email}")
+    current_app.logger.info(f"[SIGNIN] Password received (length): {len(password)}")  # Remove this after debugging
 
     if not email or not password:
-        current_app.logger.info("[DEBUG] Missing credentials.")
+        current_app.logger.info("[SIGNIN] Missing email or password.")
         return jsonify({'error': 'Missing email and password.'}), 400
+
+    login_path = 'None'
 
     # Admin check
     admin = AdminUser.query.filter(
         (func.lower(AdminUser.username) == email) |
         (func.lower(AdminUser.email) == email)
     ).first()
-    current_app.logger.info("[DEBUG] Admin User Found: '%s'" if admin else "[DEBUG] No Admin User Found", admin.username if admin else '')
 
     if admin:
+        login_path = 'Admin'
+        current_app.logger.info(f"[SIGNIN] Admin found: {admin.username}")
         password_check = admin.check_password(password)
-        current_app.logger.info("[DEBUG] Admin Password Check: %s", password_check)
+        current_app.logger.info(f"[SIGNIN] Admin password match: {password_check}")
+
         if password_check:
             set_session_user(admin.id, is_admin=True)
             admin.is_online = True
             admin.last_login_at = datetime.utcnow()
             db.session.commit()
-            current_app.logger.info("[DEBUG] Admin Login Success: '%s'", email)
+            current_app.logger.info(f"[SIGNIN] Admin login success: {email}")
+            current_app.logger.info(f"[SIGNIN] Login path used: {login_path}")
             return jsonify(serialize_admin(admin)), 200
         else:
-            current_app.logger.info("[DEBUG] Admin Password Failed for '%s'", email)
+            current_app.logger.info(f"[SIGNIN] Admin password mismatch for: {email}")
             sleep(0.3)
+            current_app.logger.info(f"[SIGNIN] Login path used: {login_path}")
             return jsonify({'error': 'Invalid email or password.'}), 401
+    else:
+        current_app.logger.info("[SIGNIN] No admin found for email.")
 
     # User check
     user = User.query.filter(
         (func.lower(User.username) == email) |
         (func.lower(User.email) == email)
     ).first()
-    current_app.logger.info("[DEBUG] User Found: '%s'" if user else "[DEBUG] No User Found", user.username if user else '')
 
     if user:
+        login_path = 'User'
+        current_app.logger.info(f"[SIGNIN] User found: {user.username}")
         password_check = user.check_password(password)
-        current_app.logger.info("[DEBUG] User Password Check: %s", password_check)
+        current_app.logger.info(f"[SIGNIN] User password match: {password_check}")
+
         if password_check:
             set_session_user(user.id, is_admin=False)
             user.is_online = True
             user.last_login_at = datetime.utcnow()
             db.session.commit()
-            current_app.logger.info("[DEBUG] User Login Success: '%s'", email)
+            current_app.logger.info(f"[SIGNIN] User login success: {email}")
+            current_app.logger.info(f"[SIGNIN] Login path used: {login_path}")
             return jsonify(serialize_user(user)), 200
         else:
-            current_app.logger.info("[DEBUG] User Password Failed for '%s'", email)
+            current_app.logger.info(f"[SIGNIN] User password mismatch for: {email}")
             sleep(0.3)
+            current_app.logger.info(f"[SIGNIN] Login path used: {login_path}")
             return jsonify({'error': 'Invalid email or password.'}), 401
+    else:
+        current_app.logger.info("[SIGNIN] No user found for email.")
 
-    current_app.logger.info("[DEBUG] No user found matching '%s'", email)
+    current_app.logger.info(f"[SIGNIN] No user or admin found for: {email}")
+    current_app.logger.info(f"[SIGNIN] Login path used: {login_path}")
     sleep(0.3)
     return jsonify({'error': 'Invalid email or password.'}), 401
+
 
 
 @app.route('/current_user', methods=['GET'])
