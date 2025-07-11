@@ -1,3 +1,4 @@
+// ✅ No Firebase, Fully Fixed
 import React, { useState, useContext, useEffect } from 'react';
 import './AuthForms.css';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
@@ -6,7 +7,7 @@ import { toast } from 'react-toastify';
 
 function SignIn() {
   const { user, setUser } = useContext(AuthContext);
-  const [identifier, setIdentifier] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -50,17 +51,17 @@ function SignIn() {
   }, [user, navigate, setUser]);
 
   useEffect(() => {
-    document.querySelector('input[aria-label="Username or Email"]')?.focus();
+    document.querySelector('input[aria-label="Email"]')?.focus();
   }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const trimmedIdentifier = identifier.trim();
+    const trimmedEmail = email.trim();
     const trimmedPassword = password.trim();
 
-    if (!trimmedIdentifier || !trimmedPassword) {
-      setError('Please enter your username/email and password.');
+    if (!trimmedEmail || !trimmedPassword) {
+      setError('Please enter your email and password.');
       return;
     }
 
@@ -72,7 +73,7 @@ function SignIn() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          identifier: trimmedIdentifier,  // ✅ Correct key matching backend
+          email: trimmedEmail,          // ✅ Correct key
           password: trimmedPassword,
         }),
       });
@@ -102,7 +103,7 @@ function SignIn() {
         toast.success('Signed in successfully!');
         navigate(data.isAdmin ? '/admin/menu' : '/');
       } else {
-        setError(data.error || 'Invalid username/email or password.');
+        setError(data.error || 'Invalid email or password.');
         setPassword('');
       }
     } catch (err) {
@@ -113,7 +114,7 @@ function SignIn() {
     }
   };
 
-  const isSubmitDisabled = loading || !identifier.trim() || !password.trim();
+  const isSubmitDisabled = loading || !email.trim() || !password.trim();
 
   return (
     <div className="signin-container" role="main" aria-labelledby="signin-title">
@@ -133,12 +134,12 @@ function SignIn() {
 
       <form onSubmit={handleSubmit} noValidate>
         <input
-          type="text"
-          placeholder="Username or Email"
-          aria-label="Username or Email"
+          type="email"
+          placeholder="Email"
+          aria-label="Email"
           autoComplete="username"
-          value={identifier}
-          onChange={(e) => setIdentifier(e.target.value)}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           required
           disabled={loading}
         />
