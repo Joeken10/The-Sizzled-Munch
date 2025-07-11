@@ -361,56 +361,41 @@ def signup():
         'user': serialize_user(user)
     }), 201
 
-
 @app.route('/signin', methods=['POST'])
 def signin():
-    print("=== [SIGNIN] Login attempt started ===")
+    print("=== SIGNIN DEBUG START ===")
+    data = request.get_json()
+    print("Received Data:", data)
 
-    ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)
-    print(f"[SIGNIN] IP: {ip_address}")
-
-    if not request.is_json:
-        print("[SIGNIN] Invalid Content-Type")
-        return jsonify({'error': 'Invalid Content-Type; must be JSON'}), 400
-
-    data = request.get_json() or {}
     email = (data.get('email') or '').strip().lower()
     password = (data.get('password') or '').strip()
 
-    print(f"[SIGNIN] Email: {email}")
-    print(f"[SIGNIN] Password length: {len(password)}")
+    print(f"Email: {email}")
+    print(f"Password: {password}")
 
-    # Admin Check
     admin = AdminUser.query.filter(
         (func.lower(AdminUser.username) == email) |
         (func.lower(AdminUser.email) == email)
     ).first()
-
     if admin:
-        print(f"[SIGNIN] Admin Found: {admin.username}")
-        password_check = admin.check_password(password)
-        print(f"[SIGNIN] Admin Password Match: {password_check}")
+        print("[Admin Found]")
+        print("Password Hash:", admin.password_hash)
+        print("Password Check Result:", admin.check_password(password))
+    else:
+        print("[No Admin Found]")
 
-        if password_check:
-            return jsonify(serialize_admin(admin)), 200
-
-    # User Check
     user = User.query.filter(
         (func.lower(User.username) == email) |
         (func.lower(User.email) == email)
     ).first()
-
     if user:
-        print(f"[SIGNIN] User Found: {user.username}")
-        password_check = user.check_password(password)
-        print(f"[SIGNIN] User Password Match: {password_check}")
+        print("[User Found]")
+        print("Password Hash:", user.password_hash)
+        print("Password Check Result:", user.check_password(password))
+    else:
+        print("[No User Found]")
 
-        if password_check:
-            return jsonify(serialize_user(user)), 200
-
-    print(f"[SIGNIN] Login failed for email: {email}")
-    return jsonify({'error': 'Invalid email or password.'}), 401
-
+    # Let it continue normally afterward
 
 
 @app.route('/current_user', methods=['GET'])
