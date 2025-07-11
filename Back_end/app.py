@@ -360,7 +360,6 @@ def signup():
         'message': 'User registered. Verification email sent.',
         'user': serialize_user(user)
     }), 201
-
 @app.route('/signin', methods=['POST'])
 def signin():
     print("=== SIGNIN DEBUG START ===")
@@ -395,7 +394,17 @@ def signin():
     else:
         print("[No User Found]")
 
-    # Let it continue normally afterward
+    # ✅ AUTHENTICATION LOGIC & RESPONSE:
+    if admin and admin.check_password(password):
+        set_session_user(admin.id, True)
+        return jsonify(serialize_admin(admin)), 200
+
+    if user and user.check_password(password):
+        set_session_user(user.id, False)
+        return jsonify(serialize_user(user)), 200
+
+    return jsonify({'error': 'Invalid email or password.'}), 401
+
 
 
 @app.route('/current_user', methods=['GET'])
