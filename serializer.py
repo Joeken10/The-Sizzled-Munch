@@ -18,7 +18,9 @@ def serialize_admin(admin):
         "id": admin.id,
         "username": admin.username,
         "email": admin.email,
-        "isAdmin": True
+        "isAdmin": True,
+        "is_online": admin.is_online,
+        "last_login_at": admin.last_login_at.isoformat() if admin.last_login_at else None
     }
 
 

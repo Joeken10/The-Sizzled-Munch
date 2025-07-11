@@ -63,6 +63,10 @@ class AdminUser(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(512), nullable=False)
+    
+    # Add missing fields that are accessed in signin function
+    is_online = db.Column(db.Boolean, default=False)
+    last_login_at = db.Column(db.DateTime)
 
     @property
     def password(self):
