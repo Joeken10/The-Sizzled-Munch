@@ -29,6 +29,8 @@ if db_uri and db_uri.startswith('postgres://'):
 app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# Critical Security Configuration
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-key-change-in-production-immediately')
 
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
@@ -285,41 +287,19 @@ def signup():
     if User.query.filter_by(email=email).first():
         return jsonify({'error': 'Email already exists'}), 409
 
-    verification_code = generate_verification_code()
-
     user = User(
         username=username,
         email=email,
-        verification_code=verification_code,
         verification_code_sent_at=datetime.utcnow()
     )
     user.password = password
     db.session.add(user)
     db.session.commit()
 
-    msg = Message(
-        subject="Verify Your Sizzled Munch Email",
-        sender=app.config['MAIL_USERNAME'],
-        recipients=[email]
-    )
-    msg.body = f"""Verify Your Email Address
-
-To continue using your Sizzled Munch account, please verify your email address.
-
-Enter this verification code:
-{verification_code}
-
-The request for this verification originated from IP: 127.0.0.1
-
-If this wasn’t you, we recommend:
-
-    Resetting your Sizzled Munch password immediately.
-    Checking your account for unauthorized changes.
-    Contacting Sizzled Munch support if you can't access your account.
-
-Sizzled Munch, 00100, Nairobi, Kaunda Street.
-"""
-    mail.send(msg)
+    # Generate and send verification code via email, then store the returned code
+    verification_code = send_verification_email(email, request.remote_addr or '127.0.0.1')
+    user.verification_code = verification_code
+    db.session.commit()
 
     return jsonify({'message': 'User registered. Verification email sent.'}), 201
 
@@ -982,16 +962,22 @@ def send_order_confirmation_email(user_email, order, order_items):
 
 @app.route('/users/<int:user_id>/orders', methods=['GET'])
 def get_user_orders(user_id):
-    orders = Order.query.filter_by(user_id=user_id).all()
+    # Use eager loading to avoid N+1 queries - fetch orders with related items and menu items in one query
+    orders = (Order.query
+              .filter_by(user_id=user_id)
+              .options(db.joinedload(Order.items).joinedload(OrderItem.menu_item))
+              .order_by(Order.created_at.desc())
+              .all())
+    
     active_orders = []
     history_orders = []
+    
     for order in orders:
-        items = OrderItem.query.filter_by(order_id=order.id).all()
+        # Build order items list efficiently since menu items are already loaded
         order_items = []
-        for item in items:
-            menu_item = MenuItem.query.get(item.menu_item_id)
+        for item in order.items:
             order_items.append({
-                'item_name': menu_item.item_name if menu_item else "Unknown Item",
+                'item_name': item.menu_item.item_name if item.menu_item else "Unknown Item",
                 'quantity': item.quantity,
                 'price': float(item.price)
             })
@@ -999,8 +985,8 @@ def get_user_orders(user_id):
         order_data = {
             'id': order.id,
             'total_amount': float(order.total_amount),
-            'status': getattr(order, 'status', 'Pending'),
-            'created_at': getattr(order, 'created_at', datetime.utcnow()),
+            'status': order.status,
+            'created_at': order.created_at.isoformat() if order.created_at else None,
             'items': order_items
         }
 
