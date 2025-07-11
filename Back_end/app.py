@@ -18,7 +18,7 @@ load_dotenv()
 
 app = Flask(__name__)
 
-
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'development-key-change-in-production')
 
 from werkzeug.middleware.proxy_fix import ProxyFix
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
