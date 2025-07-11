@@ -1,5 +1,4 @@
 from flask import Flask, request, jsonify, session, current_app
-import logging
 from sqlalchemy import func
 from flask_migrate import Migrate
 from flask_cors import CORS
@@ -44,10 +43,6 @@ app.config['MAIL_PORT'] = 465
 app.config['MAIL_USE_SSL'] = True
 app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
-
-
-app.logger.setLevel(logging.DEBUG)
-logging.basicConfig(level=logging.DEBUG)
 
 # Initialize extensions
 mail = Mail(app)
@@ -369,88 +364,51 @@ def signup():
 
 @app.route('/signin', methods=['POST'])
 def signin():
-    current_app.logger.info("=== [SIGNIN] Login attempt started ===")
+    print("=== [SIGNIN] Login attempt started ===")
 
-    # Log IP address (Render-friendly)
     ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)
-    current_app.logger.info(f"[SIGNIN] Login attempt from IP: {ip_address}")
+    print(f"[SIGNIN] IP: {ip_address}")
 
     if not request.is_json:
-        current_app.logger.info("[SIGNIN] Invalid Content-Type (not JSON)")
+        print("[SIGNIN] Invalid Content-Type")
         return jsonify({'error': 'Invalid Content-Type; must be JSON'}), 400
 
     data = request.get_json() or {}
     email = (data.get('email') or '').strip().lower()
     password = (data.get('password') or '').strip()
 
-    current_app.logger.info(f"[SIGNIN] Email received: {email}")
-    current_app.logger.info(f"[SIGNIN] Password received (length): {len(password)}")  # Remove this after debugging
+    print(f"[SIGNIN] Email: {email}")
+    print(f"[SIGNIN] Password length: {len(password)}")
 
-    if not email or not password:
-        current_app.logger.info("[SIGNIN] Missing email or password.")
-        return jsonify({'error': 'Missing email and password.'}), 400
-
-    login_path = 'None'
-
-    # Admin check
+    # Admin Check
     admin = AdminUser.query.filter(
         (func.lower(AdminUser.username) == email) |
         (func.lower(AdminUser.email) == email)
     ).first()
 
     if admin:
-        login_path = 'Admin'
-        current_app.logger.info(f"[SIGNIN] Admin found: {admin.username}")
+        print(f"[SIGNIN] Admin Found: {admin.username}")
         password_check = admin.check_password(password)
-        current_app.logger.info(f"[SIGNIN] Admin password match: {password_check}")
+        print(f"[SIGNIN] Admin Password Match: {password_check}")
 
         if password_check:
-            set_session_user(admin.id, is_admin=True)
-            admin.is_online = True
-            admin.last_login_at = datetime.utcnow()
-            db.session.commit()
-            current_app.logger.info(f"[SIGNIN] Admin login success: {email}")
-            current_app.logger.info(f"[SIGNIN] Login path used: {login_path}")
             return jsonify(serialize_admin(admin)), 200
-        else:
-            current_app.logger.info(f"[SIGNIN] Admin password mismatch for: {email}")
-            sleep(0.3)
-            current_app.logger.info(f"[SIGNIN] Login path used: {login_path}")
-            return jsonify({'error': 'Invalid email or password.'}), 401
-    else:
-        current_app.logger.info("[SIGNIN] No admin found for email.")
 
-    # User check
+    # User Check
     user = User.query.filter(
         (func.lower(User.username) == email) |
         (func.lower(User.email) == email)
     ).first()
 
     if user:
-        login_path = 'User'
-        current_app.logger.info(f"[SIGNIN] User found: {user.username}")
+        print(f"[SIGNIN] User Found: {user.username}")
         password_check = user.check_password(password)
-        current_app.logger.info(f"[SIGNIN] User password match: {password_check}")
+        print(f"[SIGNIN] User Password Match: {password_check}")
 
         if password_check:
-            set_session_user(user.id, is_admin=False)
-            user.is_online = True
-            user.last_login_at = datetime.utcnow()
-            db.session.commit()
-            current_app.logger.info(f"[SIGNIN] User login success: {email}")
-            current_app.logger.info(f"[SIGNIN] Login path used: {login_path}")
             return jsonify(serialize_user(user)), 200
-        else:
-            current_app.logger.info(f"[SIGNIN] User password mismatch for: {email}")
-            sleep(0.3)
-            current_app.logger.info(f"[SIGNIN] Login path used: {login_path}")
-            return jsonify({'error': 'Invalid email or password.'}), 401
-    else:
-        current_app.logger.info("[SIGNIN] No user found for email.")
 
-    current_app.logger.info(f"[SIGNIN] No user or admin found for: {email}")
-    current_app.logger.info(f"[SIGNIN] Login path used: {login_path}")
-    sleep(0.3)
+    print(f"[SIGNIN] Login failed for email: {email}")
     return jsonify({'error': 'Invalid email or password.'}), 401
 
 
