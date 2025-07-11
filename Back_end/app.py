@@ -1,5 +1,4 @@
 from flask import Flask, request, jsonify, session, current_app
-import logging
 from sqlalchemy import func
 from flask_migrate import Migrate
 from flask_cors import CORS
@@ -18,7 +17,6 @@ from serializer import serialize_user, serialize_admin, serialize_menu_item, ser
 load_dotenv()
 
 app = Flask(__name__)
-
 
 
 
@@ -45,13 +43,6 @@ app.config['MAIL_PORT'] = 465
 app.config['MAIL_USE_SSL'] = True
 app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
-
-if not app.debug:
-    gunicorn_logger = logging.getLogger('gunicorn.error')
-    app.logger.handlers = gunicorn_logger.handlers
-    app.logger.setLevel(logging.INFO)
-else:
-    app.logger.setLevel(logging.DEBUG)
 
 # Initialize extensions
 mail = Mail(app)
@@ -378,20 +369,20 @@ def signin():
         return jsonify({'error': 'Invalid Content-Type; must be JSON'}), 400
 
     data = request.get_json() or {}
-    identifier = (data.get('identifier') or '').strip().lower()
+    email = (data.get('email') or '').strip().lower()
     password = (data.get('password') or '').strip()
 
-    current_app.logger.info("[DEBUG] Identifier Received: '%s'", identifier)
+    current_app.logger.info("[DEBUG] Email Received: '%s'", email)
     current_app.logger.info("[DEBUG] Password Received: '%s'", password)
 
-    if not identifier or not password:
+    if not email or not password:
         current_app.logger.info("[DEBUG] Missing credentials.")
-        return jsonify({'error': 'Missing username/email and password.'}), 400
+        return jsonify({'error': 'Missing email and password.'}), 400
 
-    # Check admin users first
+    # Admin check
     admin = AdminUser.query.filter(
-        (func.lower(AdminUser.username) == identifier) |
-        (func.lower(AdminUser.email) == identifier)
+        (func.lower(AdminUser.username) == email) |
+        (func.lower(AdminUser.email) == email)
     ).first()
     current_app.logger.info("[DEBUG] Admin User Found: '%s'" if admin else "[DEBUG] No Admin User Found", admin.username if admin else '')
 
@@ -403,17 +394,17 @@ def signin():
             admin.is_online = True
             admin.last_login_at = datetime.utcnow()
             db.session.commit()
-            current_app.logger.info("[DEBUG] Admin Login Success: '%s'", identifier)
+            current_app.logger.info("[DEBUG] Admin Login Success: '%s'", email)
             return jsonify(serialize_admin(admin)), 200
         else:
-            current_app.logger.info("[DEBUG] Admin Password Failed for '%s'", identifier)
+            current_app.logger.info("[DEBUG] Admin Password Failed for '%s'", email)
             sleep(0.3)
-            return jsonify({'error': 'Invalid username/email or password.'}), 401
+            return jsonify({'error': 'Invalid email or password.'}), 401
 
-    # Check normal users
+    # User check
     user = User.query.filter(
-        (func.lower(User.username) == identifier) |
-        (func.lower(User.email) == identifier)
+        (func.lower(User.username) == email) |
+        (func.lower(User.email) == email)
     ).first()
     current_app.logger.info("[DEBUG] User Found: '%s'" if user else "[DEBUG] No User Found", user.username if user else '')
 
@@ -425,16 +416,16 @@ def signin():
             user.is_online = True
             user.last_login_at = datetime.utcnow()
             db.session.commit()
-            current_app.logger.info("[DEBUG] User Login Success: '%s'", identifier)
+            current_app.logger.info("[DEBUG] User Login Success: '%s'", email)
             return jsonify(serialize_user(user)), 200
         else:
-            current_app.logger.info("[DEBUG] User Password Failed for '%s'", identifier)
+            current_app.logger.info("[DEBUG] User Password Failed for '%s'", email)
             sleep(0.3)
-            return jsonify({'error': 'Invalid username/email or password.'}), 401
+            return jsonify({'error': 'Invalid email or password.'}), 401
 
-    current_app.logger.info("[DEBUG] No user found matching '%s'", identifier)
+    current_app.logger.info("[DEBUG] No user found matching '%s'", email)
     sleep(0.3)
-    return jsonify({'error': 'Invalid username/email or password.'}), 401
+    return jsonify({'error': 'Invalid email or password.'}), 401
 
 
 @app.route('/current_user', methods=['GET'])
