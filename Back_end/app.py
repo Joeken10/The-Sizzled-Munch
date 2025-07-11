@@ -1,4 +1,5 @@
-from flask import Flask, request, jsonify, session, current_app, logging
+from flask import Flask, request, jsonify, session, current_app
+import logging
 from sqlalchemy import func
 from flask_migrate import Migrate
 from flask_cors import CORS
