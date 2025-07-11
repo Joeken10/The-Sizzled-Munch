@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, session, current_app
+import logging
 from sqlalchemy import func
 from flask_migrate import Migrate
 from flask_cors import CORS
@@ -43,6 +44,10 @@ app.config['MAIL_PORT'] = 465
 app.config['MAIL_USE_SSL'] = True
 app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+
+
+app.logger.setLevel(logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
 
 # Initialize extensions
 mail = Mail(app)
