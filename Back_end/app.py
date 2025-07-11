@@ -18,7 +18,7 @@ load_dotenv()
 
 app = Flask(__name__)
 
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'development-key-change-in-production')
+
 
 from werkzeug.middleware.proxy_fix import ProxyFix
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
@@ -360,49 +360,79 @@ def signup():
         'message': 'User registered. Verification email sent.',
         'user': serialize_user(user)
     }), 201
+
+
 @app.route('/signin', methods=['POST'])
 def signin():
-    print("=== SIGNIN DEBUG START ===")
-    data = request.get_json()
-    print("Received Data:", data)
+    current_app.logger.info("=== [SIGNIN] Login attempt started ===")
 
+    if not request.is_json:
+        current_app.logger.info("[SIGNIN] Invalid Content-Type (not JSON)")
+        return jsonify({'error': 'Invalid Content-Type; must be JSON'}), 400
+
+    data = request.get_json() or {}
     email = (data.get('email') or '').strip().lower()
     password = (data.get('password') or '').strip()
 
-    print(f"Email: {email}")
-    print(f"Password: {password}")
+    current_app.logger.info(f"[SIGNIN] Email received: {email}")
+    current_app.logger.info(f"[SIGNIN] Password received (length): {len(password)}")
 
+    if not email or not password:
+        current_app.logger.info("[SIGNIN] Missing email or password.")
+        return jsonify({'error': 'Missing email and password.'}), 400
+
+    # Admin check
     admin = AdminUser.query.filter(
         (func.lower(AdminUser.username) == email) |
         (func.lower(AdminUser.email) == email)
     ).first()
-    if admin:
-        print("[Admin Found]")
-        print("Password Hash:", admin.password_hash)
-        print("Password Check Result:", admin.check_password(password))
-    else:
-        print("[No Admin Found]")
 
+    if admin:
+        current_app.logger.info(f"[SIGNIN] Admin found: {admin.username}")
+        password_check = admin.check_password(password)
+        current_app.logger.info(f"[SIGNIN] Admin password match: {password_check}")
+
+        if password_check:
+            set_session_user(admin.id, is_admin=True)
+            admin.is_online = True
+            admin.last_login_at = datetime.utcnow()
+            db.session.commit()
+            current_app.logger.info(f"[SIGNIN] Admin login success: {email}")
+            return jsonify(serialize_admin(admin)), 200
+        else:
+            current_app.logger.info(f"[SIGNIN] Admin password mismatch for: {email}")
+            sleep(0.3)
+            return jsonify({'error': 'Invalid email or password.'}), 401
+    else:
+        current_app.logger.info("[SIGNIN] No admin found for email.")
+
+    # User check
     user = User.query.filter(
         (func.lower(User.username) == email) |
         (func.lower(User.email) == email)
     ).first()
+
     if user:
-        print("[User Found]")
-        print("Password Hash:", user.password_hash)
-        print("Password Check Result:", user.check_password(password))
+        current_app.logger.info(f"[SIGNIN] User found: {user.username}")
+        password_check = user.check_password(password)
+        current_app.logger.info(f"[SIGNIN] User password match: {password_check}")
+
+        if password_check:
+            set_session_user(user.id, is_admin=False)
+            user.is_online = True
+            user.last_login_at = datetime.utcnow()
+            db.session.commit()
+            current_app.logger.info(f"[SIGNIN] User login success: {email}")
+            return jsonify(serialize_user(user)), 200
+        else:
+            current_app.logger.info(f"[SIGNIN] User password mismatch for: {email}")
+            sleep(0.3)
+            return jsonify({'error': 'Invalid email or password.'}), 401
     else:
-        print("[No User Found]")
+        current_app.logger.info("[SIGNIN] No user found for email.")
 
-    # ✅ AUTHENTICATION LOGIC & RESPONSE:
-    if admin and admin.check_password(password):
-        set_session_user(admin.id, True)
-        return jsonify(serialize_admin(admin)), 200
-
-    if user and user.check_password(password):
-        set_session_user(user.id, False)
-        return jsonify(serialize_user(user)), 200
-
+    current_app.logger.info(f"[SIGNIN] No user or admin found for: {email}")
+    sleep(0.3)
     return jsonify({'error': 'Invalid email or password.'}), 401
 
 
