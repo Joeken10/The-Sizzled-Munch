@@ -10,19 +10,19 @@
 .card-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 24px;
+  gap: 16px;
   justify-content: center;
   width: 100%;
   max-width: 1200px;
   padding: 0 12px;
 }
 
-/* Card design */
+/* Default: single card per row (very small screens) */
 .card {
   display: flex;
   flex-direction: column;
-  width: 100%;
-  max-width: 260px;
+  flex: 1 1 100%;
+  max-width: 100%;
   min-height: 420px;
   background-color: rgba(153, 156, 160, 0.15);
   border-radius: 12px;
@@ -43,7 +43,6 @@
   border-bottom: 1px solid #ccc;
 }
 
-/* Card content layout */
 .card-body {
   padding: 16px;
   flex: 1;
@@ -71,7 +70,6 @@
   margin-bottom: 12px;
 }
 
-/* Button styling */
 .btn-primary,
 .btn-success {
   display: inline-block;
@@ -92,18 +90,27 @@
   background-color: #020464;
 }
 
-/* RESPONSIVE: Make cards stack and shrink nicely on smaller devices */
-@media (max-width: 768px) {
+/* ✅ 2 cards per row on small screens (≥ 360px) */
+@media (min-width: 360px) {
   .card {
-    max-width: 100%;
-    min-height: auto;
-  }
-
-  .card-img-top {
-    height: 200px;
+    flex: 1 1 calc(50% - 16px);
+    max-width: calc(50% - 16px);
   }
 }
 
+/* 3 cards per row on tablets (≥ 768px) */
+@media (min-width: 768px) {
+  .card {
+    flex: 1 1 calc(33.333% - 16px);
+    max-width: calc(33.333% - 16px);
+  }
+
+  .card-img-top {
+    height: 255px;
+  }
+}
+
+/* Font and padding tweaks for very small phones */
 @media (max-width: 480px) {
   .card-body {
     padding: 12px;
