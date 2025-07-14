@@ -17,11 +17,11 @@
   padding: 0 12px;
 }
 
-/* Default: single card per row (very small screens) */
+/* Card base style */
 .card {
   display: flex;
   flex-direction: column;
-  flex: 1 1 100%;
+  flex: 1 1 calc(100% - 16px);  /* Default: full width */
   max-width: 100%;
   min-height: 420px;
   background-color: rgba(153, 156, 160, 0.15);
@@ -90,7 +90,7 @@
   background-color: #020464;
 }
 
-/* ✅ 2 cards per row on small screens (≥ 360px) */
+/* 👇 Breakpoint: 360px and up — two cards per row */
 @media (min-width: 360px) {
   .card {
     flex: 1 1 calc(50% - 16px);
@@ -98,7 +98,7 @@
   }
 }
 
-/* 3 cards per row on tablets (≥ 768px) */
+/* 👇 Breakpoint: 768px and up — three cards per row */
 @media (min-width: 768px) {
   .card {
     flex: 1 1 calc(33.333% - 16px);
@@ -110,7 +110,15 @@
   }
 }
 
-/* Font and padding tweaks for very small phones */
+/* 👇 Breakpoint: 1024px and up — four cards per row for large screens/laptops */
+@media (min-width: 1024px) {
+  .card {
+    flex: 1 1 calc(25% - 16px);
+    max-width: calc(25% - 16px);
+  }
+}
+
+/* 👇 Font and layout adjustments for very small phones */
 @media (max-width: 480px) {
   .card-body {
     padding: 12px;
