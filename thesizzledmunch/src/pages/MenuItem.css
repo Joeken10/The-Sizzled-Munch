@@ -1,21 +1,28 @@
 .menuItem-container {
   display: flex;
   justify-content: center;
-  padding: 40px;
+  padding: 20px;
   background-color: #f8f8f8;
+  flex-wrap: wrap;
 }
 
+/* Responsive grid layout */
 .card-grid {
   display: flex;
   flex-wrap: wrap;
   gap: 24px;
   justify-content: center;
+  width: 100%;
+  max-width: 1200px;
+  padding: 0 12px;
 }
 
+/* Card design */
 .card {
   display: flex;
   flex-direction: column;
-  width: 260px;
+  width: 100%;
+  max-width: 260px;
   min-height: 420px;
   background-color: rgba(153, 156, 160, 0.15);
   border-radius: 12px;
@@ -36,6 +43,7 @@
   border-bottom: 1px solid #ccc;
 }
 
+/* Card content layout */
 .card-body {
   padding: 16px;
   flex: 1;
@@ -56,15 +64,18 @@
   margin-bottom: 8px;
 }
 
-.card-text {
+.card-text,
+.card-description {
   font-size: 0.9rem;
   color: #555;
   margin-bottom: 12px;
 }
 
-.btn-primary {
+/* Button styling */
+.btn-primary,
+.btn-success {
   display: inline-block;
-  padding: 8px 12px;
+  padding: 10px 14px;
   background-color: #02001f;
   color: white;
   border-radius: 6px;
@@ -72,8 +83,48 @@
   font-size: 0.9rem;
   transition: background-color 0.2s ease-in-out;
   text-align: center;
+  cursor: pointer;
+  border: none;
 }
 
-.btn-primary:hover {
+.btn-primary:hover,
+.btn-success:hover {
   background-color: #020464;
+}
+
+/* RESPONSIVE: Make cards stack and shrink nicely on smaller devices */
+@media (max-width: 768px) {
+  .card {
+    max-width: 100%;
+    min-height: auto;
+  }
+
+  .card-img-top {
+    height: 200px;
+  }
+}
+
+@media (max-width: 480px) {
+  .card-body {
+    padding: 12px;
+  }
+
+  .card-title {
+    font-size: 1rem;
+  }
+
+  .card-price {
+    font-size: 0.95rem;
+  }
+
+  .card-text,
+  .card-description {
+    font-size: 0.85rem;
+  }
+
+  .btn-primary,
+  .btn-success {
+    font-size: 0.85rem;
+    padding: 8px 12px;
+  }
 }
