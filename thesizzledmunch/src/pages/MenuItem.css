@@ -1,65 +1,69 @@
+/* Container for the menu items */
 .menuItem-container {
   display: flex;
   justify-content: center;
   padding: 20px;
   background-color: #f8f8f8;
-  flex-wrap: wrap;
 }
 
-/* Responsive grid layout */
+/* Grid wrapper for all cards */
 .card-grid {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
   justify-content: center;
   width: 100%;
-  max-width: 1200px;
+  max-width: 1600px;
   padding: 0 12px;
 }
 
-/* Card base style */
+/* Card base styling */
 .card {
+  flex: 1 1 calc(100% - 16px);
+  max-width: 100%;
   display: flex;
   flex-direction: column;
-  flex: 1 1 calc(100% - 16px);  /* Default: full width */
-  max-width: 100%;
-  min-height: 420px;
   background-color: rgba(153, 156, 160, 0.15);
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   overflow: hidden;
   transition: transform 0.2s ease-in-out;
+  min-height: 360px;
 }
 
 .card:hover {
-  transform: translateY(-5px);
+  transform: translateY(-4px);
 }
 
+/* Image container with consistent aspect ratio */
 .card-img-top {
   width: 100%;
-  height: 255px;
+  aspect-ratio: 4 / 3;
   object-fit: cover;
   background-color: #e0e0e0;
   border-bottom: 1px solid #ccc;
 }
 
+/* Card content */
 .card-body {
   padding: 16px;
-  flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  flex-grow: 1;
 }
 
+/* Typography */
 .card-title {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 600;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
+  color: #222;
 }
 
 .card-price {
   font-size: 1rem;
-  color: #333;
+  color: #444;
   margin-bottom: 8px;
 }
 
@@ -67,50 +71,77 @@
 .card-description {
   font-size: 0.9rem;
   color: #555;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
+/* Buttons */
 .btn-primary,
 .btn-success {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 10px 14px;
   background-color: #02001f;
-  color: white;
+  color: #fff;
   border-radius: 6px;
-  text-decoration: none;
   font-size: 0.9rem;
-  transition: background-color 0.2s ease-in-out;
-  text-align: center;
-  cursor: pointer;
   border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out, transform 0.2s ease-in-out;
 }
 
 .btn-primary:hover,
 .btn-success:hover {
   background-color: #020464;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-/* 👇 Breakpoint: 360px and up — two cards per row */
+/* Responsive layout adjustments */
+
+/* Small phones */
+@media (max-width: 360px) {
+  .card {
+    flex: 1 1 calc(100% - 16px);
+    max-width: calc(100% - 16px);
+    min-height: 300px;
+  }
+
+  .card-title {
+    font-size: 0.95rem;
+  }
+
+  .card-price,
+  .card-text,
+  .card-description {
+    font-size: 0.8rem;
+  }
+
+  .btn-primary,
+  .btn-success {
+    font-size: 0.8rem;
+    padding: 8px 12px;
+  }
+}
+
+/* Phones in portrait */
 @media (min-width: 360px) {
   .card {
     flex: 1 1 calc(50% - 16px);
     max-width: calc(50% - 16px);
+    min-height: 320px;
   }
 }
 
-/* 👇 Breakpoint: 768px and up — three cards per row */
+/* Tablets */
 @media (min-width: 768px) {
   .card {
-    flex: 1 1 calc(33.333% - 16px);
-    max-width: calc(33.333% - 16px);
-  }
-
-  .card-img-top {
-    height: 255px;
+    flex: 1 1 calc(33.33% - 16px);
+    max-width: calc(33.33% - 16px);
   }
 }
 
-/* 👇 Breakpoint: 1024px and up — four cards per row for large screens/laptops */
+/* Small desktops */
 @media (min-width: 1024px) {
   .card {
     flex: 1 1 calc(25% - 16px);
@@ -118,28 +149,18 @@
   }
 }
 
-/* 👇 Font and layout adjustments for very small phones */
-@media (max-width: 480px) {
-  .card-body {
-    padding: 12px;
+/* Medium desktops */
+@media (min-width: 1280px) {
+  .card {
+    flex: 1 1 calc(20% - 16px);
+    max-width: calc(20% - 16px);
   }
+}
 
-  .card-title {
-    font-size: 1rem;
-  }
-
-  .card-price {
-    font-size: 0.95rem;
-  }
-
-  .card-text,
-  .card-description {
-    font-size: 0.85rem;
-  }
-
-  .btn-primary,
-  .btn-success {
-    font-size: 0.85rem;
-    padding: 8px 12px;
+/* Large desktops - 6 per row */
+@media (min-width: 1600px) {
+  .card {
+    flex: 1 1 calc(16.66% - 16px);
+    max-width: calc(16.66% - 16px);
   }
 }
