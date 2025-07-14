@@ -1,3 +1,4 @@
+
 .menuItem-container {
   display: flex;
   justify-content: center;
@@ -18,7 +19,7 @@
 
 
 .card {
-  flex: 1 1 100%;
+  flex: 1 1 calc(100% - 16px);
   max-width: 100%;
   display: flex;
   flex-direction: column;
@@ -96,6 +97,13 @@
   background-color: #020464;
 }
 
+
+@media (max-width: 479px) {
+  .card {
+    flex: 1 1 calc(50% - 16px);
+    max-width: calc(50% - 16px);
+  }
+}
 
 @media (min-width: 480px) {
   .card {
