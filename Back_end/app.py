@@ -356,68 +356,46 @@ def signup():
 
 @app.route('/signin', methods=['POST'])
 def signin():
-    if not request.is_json:
-        print("[DEBUG] Invalid Content-Type (not JSON)")
-        return jsonify({'error': 'Invalid Content-Type; must be JSON'}), 400
-
     data = request.get_json() or {}
     identifier = (data.get('identifier') or '').strip().lower()
     password = (data.get('password') or '').strip()
 
-    print(f"[DEBUG] Identifier Received: {identifier}")
-    print(f"[DEBUG] Password Received: '{password}'")
+    current_app.logger.info(f"[DEBUG] Incoming Login | Identifier: {identifier} | Raw Password Length: {len(password)}")
+    current_app.logger.info(f"[DEBUG] Full Payload: {data}")
 
     if not identifier or not password:
-        print("[DEBUG] Missing credentials")
-        return jsonify({'error': 'Missing username/email and password.'}), 400
+        return jsonify({'error': 'Missing username/email or password.'}), 400
 
+    # Try admin
     admin = AdminUser.query.filter(
         (func.lower(AdminUser.username) == identifier) |
         (func.lower(AdminUser.email) == identifier)
     ).first()
-
-    print(f"[DEBUG] Admin User Found: {admin.username if admin else 'None'}")
-
     if admin:
-        password_check = admin.check_password(password)
-        print(f"[DEBUG] Admin Password Check: {password_check}")
-        if password_check:
-            set_session_user(admin.id, is_admin=True)
-            admin.is_online = True
-            admin.last_login_at = datetime.utcnow()
-            db.session.commit()
-            print(f"[DEBUG] Admin Login Success: {identifier}")
+        current_app.logger.info(f"[DEBUG] Admin Found: {admin.username}")
+        result = admin.check_password(password)
+        current_app.logger.info(f"[DEBUG] Admin Password Check Result: {result}")
+        if result:
+            set_session_user(admin.id, True)
             return jsonify(serialize_admin(admin)), 200
-        else:
-            print(f"[DEBUG] Admin Password Failed for {identifier}")
-            sleep(0.3)
-            return jsonify({'error': 'Invalid username/email or password.'}), 401
+        return jsonify({'error': 'Invalid credentials'}), 401
 
+    # Try normal user
     user = User.query.filter(
         (func.lower(User.username) == identifier) |
         (func.lower(User.email) == identifier)
     ).first()
-
-    print(f"[DEBUG] User Found: {user.username if user else 'None'}")
-
     if user:
-        password_check = user.check_password(password)
-        print(f"[DEBUG] User Password Check: {password_check}")
-        if password_check:
-            set_session_user(user.id, is_admin=False)
-            user.is_online = True
-            user.last_login_at = datetime.utcnow()
-            db.session.commit()
-            print(f"[DEBUG] User Login Success: {identifier}")
+        current_app.logger.info(f"[DEBUG] User Found: {user.username}")
+        result = user.check_password(password)
+        current_app.logger.info(f"[DEBUG] User Password Check Result: {result}")
+        if result:
+            set_session_user(user.id, False)
             return jsonify(serialize_user(user)), 200
-        else:
-            print(f"[DEBUG] User Password Failed for {identifier}")
-            sleep(0.3)
-            return jsonify({'error': 'Invalid username/email or password.'}), 401
+        return jsonify({'error': 'Invalid credentials'}), 401
 
-    print(f"[DEBUG] No user found for {identifier}")
-    sleep(0.3)
-    return jsonify({'error': 'Invalid username/email or password.'}), 401
+    return jsonify({'error': 'Invalid credentials'}), 401
+
 
 
 @app.route('/current_user', methods=['GET'])
