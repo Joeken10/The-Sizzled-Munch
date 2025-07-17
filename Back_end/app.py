@@ -309,28 +309,37 @@ def signup():
     data = request.get_json() or {}
     username = (data.get('username') or '').strip()
     email = (data.get('email') or '').strip().lower()
-    password = data.get('password')
+    password = (data.get('password') or '').strip()
     is_google = bool(data.get('is_google', False))
 
+    current_app.logger.info(f"[DEBUG] Incoming Signup | Username: {username} | Email: {email} | Google: {is_google}")
+
+    # ✅ Basic validations
     if not username or not email:
         return jsonify({'error': 'Username and email are required'}), 400
 
-    if User.query.filter_by(username=username).first():
+    if not is_google and not password:
+        return jsonify({'error': 'Password is required for normal signup'}), 400
+
+    # ✅ Check if username or email already exist
+    if User.query.filter(func.lower(User.username) == username.lower()).first():
         return jsonify({'error': 'Username already exists'}), 409
-    if User.query.filter_by(email=email).first():
+    if User.query.filter(func.lower(User.email) == email).first():
         return jsonify({'error': 'Email already exists'}), 409
 
+    # ✅ Google Signup Flow
     if is_google:
         user = User(username=username, email=email, is_verified=True)
         db.session.add(user)
         db.session.commit()
         set_session_user(user.id, False)
-        current_app.logger.info(f"Google user registered and logged in: {username}")
-        return jsonify({'message': 'Google user registered successfully.', 'user': serialize_user(user)}), 201
+        current_app.logger.info(f"[DEBUG] Google user registered and logged in: {username}")
+        return jsonify({
+            'message': 'Google user registered successfully.',
+            'user': serialize_user(user)
+        }), 201
 
-    if not password:
-        return jsonify({'error': 'Password is required for normal signup'}), 400
-
+    # ✅ Normal Signup Flow
     verification_code = generate_verification_code()
     user = User(
         username=username,
@@ -338,21 +347,26 @@ def signup():
         verification_code=verification_code,
         verification_code_sent_at=datetime.utcnow()
     )
-    user.password = password 
+    user.password = password  # ✅ Password is hashed in the model property
     db.session.add(user)
     db.session.commit()
 
-
-    send_verification_email(email, request.remote_addr or 'unknown')
+    # ✅ Send verification email
+    try:
+        send_verification_email(email, request.remote_addr or 'unknown')
+        current_app.logger.info(f"[DEBUG] Verification email sent to: {email}")
+    except Exception as e:
+        current_app.logger.error(f"[ERROR] Failed to send verification email: {e}")
 
     set_session_user(user.id, False)
 
-    current_app.logger.info(f"User signed up and verification email sent: {username}")
+    current_app.logger.info(f"[DEBUG] User signed up successfully: {username}")
 
     return jsonify({
         'message': 'User registered. Verification email sent.',
         'user': serialize_user(user)
     }), 201
+
 
 
 @app.route('/signin', methods=['POST'])
@@ -395,7 +409,7 @@ def signin():
             return jsonify(serialize_user(user)), 200
         return jsonify({'error': 'Invalid credentials'}), 401
 
-    return jsonify({'error': 'Invalid credentials'}), 401
+    
 
 
 
