@@ -7,7 +7,7 @@ import { toast } from 'react-toastify';
 
 function SignIn() {
   const { user, setUser } = useContext(AuthContext);
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState(''); // ✅ Works for email or username
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -51,17 +51,17 @@ function SignIn() {
   }, [user, navigate, setUser]);
 
   useEffect(() => {
-    document.querySelector('input[aria-label="Email"]')?.focus();
+    document.querySelector('input[aria-label="Email or Username"]')?.focus();
   }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const trimmedEmail = email.trim();
+    const trimmedIdentifier = identifier.trim();
     const trimmedPassword = password.trim();
 
-    if (!trimmedEmail || !trimmedPassword) {
-      setError('Please enter your email and password.');
+    if (!trimmedIdentifier || !trimmedPassword) {
+      setError('Please enter your email/username and password.');
       return;
     }
 
@@ -73,7 +73,7 @@ function SignIn() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: trimmedEmail,          // ✅ Correct key
+          identifier: trimmedIdentifier, // ✅ Backend expects this key
           password: trimmedPassword,
         }),
       });
@@ -103,7 +103,7 @@ function SignIn() {
         toast.success('Signed in successfully!');
         navigate(data.isAdmin ? '/admin/menu' : '/');
       } else {
-        setError(data.error || 'Invalid email or password.');
+        setError(data.error || 'Invalid email/username or password.');
         setPassword('');
       }
     } catch (err) {
@@ -114,7 +114,7 @@ function SignIn() {
     }
   };
 
-  const isSubmitDisabled = loading || !email.trim() || !password.trim();
+  const isSubmitDisabled = loading || !identifier.trim() || !password.trim();
 
   return (
     <div className="signin-container" role="main" aria-labelledby="signin-title">
@@ -134,12 +134,12 @@ function SignIn() {
 
       <form onSubmit={handleSubmit} noValidate>
         <input
-          type="email"
-          placeholder="Email"
-          aria-label="Email"
+          type="text"
+          placeholder="Email or Username"
+          aria-label="Email or Username"
           autoComplete="username"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          value={identifier}
+          onChange={(e) => setIdentifier(e.target.value)}
           required
           disabled={loading}
         />
