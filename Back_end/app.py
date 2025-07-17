@@ -307,35 +307,39 @@ def set_session_user(user_id, is_admin_flag):
 @app.route('/signup', methods=['POST'])
 def signup():
     data = request.get_json() or {}
-    username = (data.get('username') or '').strip().lower()
+    username = (data.get('username') or '').strip()
     email = (data.get('email') or '').strip().lower()
     password = (data.get('password') or '').strip()
     is_google = bool(data.get('is_google', False))
 
     current_app.logger.info(f"[DEBUG] Incoming Signup | Username: {username} | Email: {email} | Google: {is_google}")
 
-    # ✅ Validate required fields
+    # ✅ Basic validations
     if not username or not email:
         return jsonify({'error': 'Username and email are required'}), 400
+
     if not is_google and not password:
         return jsonify({'error': 'Password is required for normal signup'}), 400
 
-    # ✅ Check duplicates (case-insensitive)
-    if User.query.filter(func.lower(User.username) == username).first():
+    # ✅ Check if username or email already exist
+    if User.query.filter(func.lower(User.username) == username.lower()).first():
         return jsonify({'error': 'Username already exists'}), 409
     if User.query.filter(func.lower(User.email) == email).first():
         return jsonify({'error': 'Email already exists'}), 409
 
-    # ✅ Google signup
+    # ✅ Google Signup Flow
     if is_google:
         user = User(username=username, email=email, is_verified=True)
         db.session.add(user)
         db.session.commit()
         set_session_user(user.id, False)
-        current_app.logger.info(f"[DEBUG] Google signup success: {username}")
-        return jsonify({'message': 'Google user registered successfully.', 'user': serialize_user(user)}), 201
+        current_app.logger.info(f"[DEBUG] Google user registered and logged in: {username}")
+        return jsonify({
+            'message': 'Google user registered successfully.',
+            'user': serialize_user(user)
+        }), 201
 
-    # ✅ Normal signup
+    # ✅ Normal Signup Flow
     verification_code = generate_verification_code()
     user = User(
         username=username,
@@ -343,19 +347,26 @@ def signup():
         verification_code=verification_code,
         verification_code_sent_at=datetime.utcnow()
     )
-    user.password = password  # password is hashed by property
+    user.password = password  # ✅ Password is hashed in the model property
     db.session.add(user)
     db.session.commit()
 
     # ✅ Send verification email
     try:
         send_verification_email(email, request.remote_addr or 'unknown')
-        current_app.logger.info(f"[DEBUG] Verification email sent to {email}")
+        current_app.logger.info(f"[DEBUG] Verification email sent to: {email}")
     except Exception as e:
-        current_app.logger.error(f"[ERROR] Email sending failed: {e}")
+        current_app.logger.error(f"[ERROR] Failed to send verification email: {e}")
 
     set_session_user(user.id, False)
-    return jsonify({'message': 'User registered. Verification email sent.', 'user': serialize_user(user)}), 201
+
+    current_app.logger.info(f"[DEBUG] User signed up successfully: {username}")
+
+    return jsonify({
+        'message': 'User registered. Verification email sent.',
+        'user': serialize_user(user)
+    }), 201
+
 
 
 @app.route('/signin', methods=['POST'])
@@ -364,39 +375,40 @@ def signin():
     identifier = (data.get('identifier') or '').strip().lower()
     password = (data.get('password') or '').strip()
 
-    current_app.logger.info(f"[DEBUG] Signin Attempt | Identifier: {identifier}")
+    current_app.logger.info(f"[DEBUG] Incoming Login | Identifier: {identifier} | Raw Password Length: {len(password)}")
+    current_app.logger.info(f"[DEBUG] Full Payload: {data}")
 
     if not identifier or not password:
-        return jsonify({'error': 'Missing username/email or password'}), 400
+        return jsonify({'error': 'Missing username/email or password.'}), 400
 
-    # ✅ Try admin login
+    # Try admin
     admin = AdminUser.query.filter(
         (func.lower(AdminUser.username) == identifier) |
         (func.lower(AdminUser.email) == identifier)
     ).first()
     if admin:
-        if admin.check_password(password):
+        current_app.logger.info(f"[DEBUG] Admin Found: {admin.username}")
+        result = admin.check_password(password)
+        current_app.logger.info(f"[DEBUG] Admin Password Check Result: {result}")
+        if result:
             set_session_user(admin.id, True)
-            current_app.logger.info(f"[DEBUG] Admin login success: {admin.username}")
             return jsonify(serialize_admin(admin)), 200
         return jsonify({'error': 'Invalid credentials'}), 401
 
-    # ✅ Try normal user login
+    # Try normal user
     user = User.query.filter(
         (func.lower(User.username) == identifier) |
         (func.lower(User.email) == identifier)
     ).first()
     if user:
-        if not user.check_password(password):
-            return jsonify({'error': 'Invalid credentials'}), 401
-        if not user.is_verified:
-            return jsonify({'error': 'Please verify your email before logging in'}), 403
+        current_app.logger.info(f"[DEBUG] User Found: {user.username}")
+        result = user.check_password(password)
+        current_app.logger.info(f"[DEBUG] User Password Check Result: {result}")
+        if result:
+            set_session_user(user.id, False)
+            return jsonify(serialize_user(user)), 200
+        return jsonify({'error': 'Invalid credentials'}), 401
 
-        set_session_user(user.id, False)
-        current_app.logger.info(f"[DEBUG] User login success: {user.username}")
-        return jsonify(serialize_user(user)), 200
-
-    return jsonify({'error': 'Invalid credentials'}), 401
     
 
 
