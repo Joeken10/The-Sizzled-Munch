@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, session, current_app
+import logging
 from sqlalchemy import func
 from flask_migrate import Migrate
 from flask_cors import CORS
@@ -17,7 +18,7 @@ from serializer import serialize_user, serialize_admin, serialize_menu_item, ser
 load_dotenv()
 
 app = Flask(__name__)
-
+app.logger.setLevel(logging.DEBUG)
 
 from werkzeug.middleware.proxy_fix import ProxyFix
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
