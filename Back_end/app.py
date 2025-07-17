@@ -368,46 +368,40 @@ def signup():
     }), 201
 
 
-
 @app.route('/signin', methods=['POST'])
 def signin():
     data = request.get_json() or {}
-    identifier = (data.get('identifier') or '').strip().lower()
+    username = (data.get('username') or '').strip().lower()
+    email = (data.get('email') or '').strip().lower()
     password = (data.get('password') or '').strip()
 
-    current_app.logger.info(f"[DEBUG] Incoming Login | Identifier: {identifier} | Raw Password Length: {len(password)}")
-    current_app.logger.info(f"[DEBUG] Full Payload: {data}")
+    current_app.logger.info(f"[DEBUG] Incoming Login | Username: {username} | Email: {email}")
 
-    if not identifier or not password:
-        return jsonify({'error': 'Missing username/email or password.'}), 400
+    if not (username or email) or not password:
+        return jsonify({'error': 'Provide username or email and password.'}), 400
 
-    # Try admin
-    admin = AdminUser.query.filter(
-        (func.lower(AdminUser.username) == identifier) |
-        (func.lower(AdminUser.email) == identifier)
-    ).first()
-    if admin:
-        current_app.logger.info(f"[DEBUG] Admin Found: {admin.username}")
-        result = admin.check_password(password)
-        current_app.logger.info(f"[DEBUG] Admin Password Check Result: {result}")
-        if result:
-            set_session_user(admin.id, True)
-            return jsonify(serialize_admin(admin)), 200
-        return jsonify({'error': 'Invalid credentials'}), 401
+    # Build query dynamically
+    admin = None
+    if email:
+        admin = AdminUser.query.filter(func.lower(AdminUser.email) == email).first()
+    elif username:
+        admin = AdminUser.query.filter(func.lower(AdminUser.username) == username).first()
 
-    # Try normal user
-    user = User.query.filter(
-        (func.lower(User.username) == identifier) |
-        (func.lower(User.email) == identifier)
-    ).first()
-    if user:
-        current_app.logger.info(f"[DEBUG] User Found: {user.username}")
-        result = user.check_password(password)
-        current_app.logger.info(f"[DEBUG] User Password Check Result: {result}")
-        if result:
-            set_session_user(user.id, False)
-            return jsonify(serialize_user(user)), 200
-        return jsonify({'error': 'Invalid credentials'}), 401
+    if admin and admin.check_password(password):
+        set_session_user(admin.id, True)
+        return jsonify(serialize_admin(admin)), 200
+
+    user = None
+    if email:
+        user = User.query.filter(func.lower(User.email) == email).first()
+    elif username:
+        user = User.query.filter(func.lower(User.username) == username).first()
+
+    if user and user.check_password(password):
+        set_session_user(user.id, False)
+        return jsonify(serialize_user(user)), 200
+
+    return jsonify({'error': 'Invalid credentials'}), 401
 
     
 
